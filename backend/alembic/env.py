@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from logging.config import fileConfig
 import os
+import sys
 
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-from backend.app.core.database import Base
-import backend.app.models  # noqa: F401  # ensure models are imported for metadata
+# Ensure 'app' package is importable when running inside /app/backend
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from app.core.database import Base  # type: ignore  # resolved via sys.path above
+from app.models import *  # noqa: F401,F403  # ensure models imported for metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
