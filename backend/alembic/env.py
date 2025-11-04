@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from logging.config import fileConfig
+import os
 
 from sqlalchemy import engine_from_config, pool
-from sqlalchemy import create_engine
 from alembic import context
 
-from backend.app.core.config import get_settings
 from backend.app.core.database import Base
 import backend.app.models  # noqa: F401  # ensure models are imported for metadata
 
@@ -23,7 +22,14 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    return get_settings().DATABASE_URL
+    # Read from env to align with runtime DATABASE_URL, with driver coercion
+    url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data.db")
+    # Alembic uses sync engine; convert async drivers to sync equivalents
+    if url.startswith("sqlite+aiosqlite"):
+        return url.replace("sqlite+aiosqlite", "sqlite", 1)
+    if url.startswith("postgresql+asyncpg"):
+        return url.replace("postgresql+asyncpg", "postgresql+psycopg2", 1)
+    return url
 
 
 def run_migrations_offline() -> None:

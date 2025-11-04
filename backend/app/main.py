@@ -4,6 +4,7 @@ import asyncio
 from contextlib import asynccontextmanager
 import contextlib
 from typing import List
+import subprocess
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,6 +55,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _run_migrations() -> None:
+    # Run Alembic migrations; ignore failure to keep app booting in readonly cases
+    try:
+        subprocess.run(["alembic", "-c", "backend/alembic.ini", "upgrade", "head"], check=False)
+    except Exception:
+        pass
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    # Run in a background thread so startup isn't blocked
+    await asyncio.to_thread(_run_migrations)
 
 
 @app.get("/health")

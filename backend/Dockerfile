@@ -23,7 +23,7 @@ ENV PORT=8000
 
 EXPOSE 8000
 
-# Use Render's PORT if provided, default to 8000 locally
-CMD ["/bin/sh", "-lc", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Run Alembic migrations then start the app. Use Render's PORT if provided.
+CMD ["/bin/sh", "-lc", "alembic -c backend/alembic.ini upgrade head && uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
 
