@@ -1,0 +1,6 @@
+Alembic migrations live here. Generate migrations with:
+
+  alembic revision --autogenerate -m "init"
+  alembic upgrade head
+
+
