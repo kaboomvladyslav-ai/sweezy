@@ -59,11 +59,10 @@ app.add_middleware(
 
 
 def _run_migrations() -> None:
-    # Run Alembic migrations; ignore failure to keep app booting in readonly cases
+    # Run Alembic migrations only if scripts exist; ignore failures
     try:
-        backend_dir = Path(__file__).resolve().parents[1]
-        # Run from backend root so alembic.ini and script_location resolve correctly
-        subprocess.run(["alembic", "-c", "alembic.ini", "upgrade", "head"], cwd=str(backend_dir), check=False)
+        if Path("backend/alembic").exists():
+            subprocess.run(["alembic", "-c", "backend/alembic.ini", "upgrade", "head"], check=False)
     except Exception:
         pass
 
