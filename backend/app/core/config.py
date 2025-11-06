@@ -17,8 +17,9 @@ class Settings(BaseSettings):
     APP_ENV: str = Field(default="development", description="environment: development|staging|production")
     APP_VERSION: str = Field(default="1.0.0")
 
-    # CORS (accepts JSON array or comma-separated string via env)
-    CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["*"])
+    # CORS (accepts JSON array or comma-separated string via env). Store raw string to avoid
+    # pydantic-settings attempting to JSON-decode before our coercion.
+    CORS_ORIGINS: str | None = Field(default="*")
 
     # Database
     DATABASE_URL: str = Field(
@@ -45,11 +46,20 @@ class Settings(BaseSettings):
 
 
     def parsed_cors_origins(self) -> List[str]:
-        if isinstance(self.CORS_ORIGINS, list):
-            return self.CORS_ORIGINS
-        # pydantic already gives list, but keep safe fallback
-        raw = str(self.CORS_ORIGINS)
-        return [o.strip() for o in raw.split(",") if o.strip()]
+        raw = self.CORS_ORIGINS
+        if raw is None:
+            return []
+        s = str(raw).strip()
+        if not s:
+            return []
+        if s.startswith("["):
+            try:
+                data = json.loads(s)
+                if isinstance(data, list):
+                    return [str(o) for o in data]
+            except Exception:
+                pass
+        return [part.strip() for part in s.split(",") if part.strip()]
 
     def assert_valid(self) -> None:
         if self.APP_ENV.lower() == "production":
@@ -57,30 +67,9 @@ class Settings(BaseSettings):
                 raise RuntimeError("JWT_SECRET_KEY must be set in production")
             if not self.DATABASE_URL:
                 raise RuntimeError("DATABASE_URL must be set in production")
-            if "*" in self.CORS_ORIGINS or self.CORS_ORIGINS == ["*"]:
+            if self.CORS_ORIGINS == "*" or self.parsed_cors_origins() == ["*"]:
                 raise RuntimeError("CORS_ORIGINS cannot be '*' in production")
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def _coerce_cors_origins(cls, v):  # type: ignore[override]
-        if v is None:
-            return []
-        if isinstance(v, list):
-            return v
-        if isinstance(v, str):
-            s = v.strip()
-            if not s:
-                return []
-            if s.startswith("["):
-                try:
-                    parsed = json.loads(s)
-                    if isinstance(parsed, list):
-                        return parsed
-                except Exception:
-                    # fall back to comma splitting
-                    pass
-            return [p.strip() for p in s.split(",") if p.strip()]
-        return v
 
 
 @lru_cache
