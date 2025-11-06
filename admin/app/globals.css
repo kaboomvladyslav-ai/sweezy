@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html, body, :root {
+  height: 100%;
+}
+
+.glass {
+  @apply bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-soft rounded-xl;
+}
+
+.container-grid {
+  @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+
