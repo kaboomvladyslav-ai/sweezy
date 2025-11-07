@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Dialog } from '@/components/ui/dialog'
 import UIInput from '@/components/ui/input'
 import UIButton from '@/components/ui/button'
+import MarkdownEditor from '@/components/admin/MarkdownEditor'
 
 type Template = { id?: string; name: string; category?: string; content: string }
 
@@ -33,7 +34,7 @@ export default function TemplateEditorDialog({ item, onSaved }: { item?: Templat
         <div className="space-y-3">
           <UIInput placeholder="Name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} />
           <UIInput placeholder="Category" value={form.category} onChange={e=>setForm({...form, category:e.target.value})} />
-          <textarea className="glass w-full px-3 py-2 min-h-[160px]" placeholder="Content" value={form.content} onChange={e=>setForm({...form, content:e.target.value})}/>
+          <MarkdownEditor value={form.content} onChange={(v)=>setForm({...form, content: v})} placeholder="Template content" />
           <UIButton onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</UIButton>
         </div>
       </Dialog>

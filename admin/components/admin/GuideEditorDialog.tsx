@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Dialog } from '@/components/ui/dialog'
 import UIInput from '@/components/ui/input'
 import UIButton from '@/components/ui/button'
+import MarkdownEditor from '@/components/admin/MarkdownEditor'
 
 type Guide = {
   id?: string
@@ -74,10 +75,7 @@ export default function GuideEditorDialog({ guide, onSaved }: { guide?: Guide; o
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <UIInput placeholder="Description" value={form.description} onChange={e=>setForm({ ...form, description: e.target.value })} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <textarea className="glass w-full px-3 py-2 min-h-[200px]" placeholder="Content (Markdown)" value={form.content} onChange={e=>setForm({ ...form, content: e.target.value })} />
-            <div className="glass w-full px-3 py-2 min-h-[200px]" dangerouslySetInnerHTML={{ __html: renderMarkdown(form.content) }} />
-          </div>
+          <MarkdownEditor value={form.content ?? ''} onChange={(v)=>setForm({...form, content: v})} />
           <div className="space-y-2">
             {form.image_url && (<img src={form.image_url} alt="preview" className="w-full h-40 object-cover rounded-lg" />)}
             <input type="file" accept="image/*" onChange={async e=>{
