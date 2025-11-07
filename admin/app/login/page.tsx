@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import Card from '@/components/Card'
 import { apiLogin } from '@/lib/api'
-import { saveToken } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -23,8 +22,7 @@ export default function LoginPage() {
               setError(null)
               setLoading(true)
               try {
-                const { access_token } = await apiLogin(email, password)
-                await saveToken(access_token)
+                await apiLogin(email, password)
                 router.replace('/admin/dashboard')
               } catch (err: any) {
                 setError(err?.message || 'Login failed')

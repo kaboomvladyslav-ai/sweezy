@@ -19,6 +19,7 @@ class Guide(Base):
     description: Mapped[Optional[str]] = mapped_column(String(500))
     content: Mapped[Optional[str]] = mapped_column(Text)
     category: Mapped[Optional[str]] = mapped_column(String(100))
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
     is_published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 

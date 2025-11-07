@@ -5,7 +5,7 @@ export async function saveToken(access: string) {
   cookies().set('access_token', access, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 60 * 60 * 24
   })

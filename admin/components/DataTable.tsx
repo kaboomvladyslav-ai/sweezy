@@ -2,7 +2,8 @@ import Card from './Card'
 
 type User = { id: string; email: string; is_superuser: boolean; created_at: string }
 
-export default function DataTable({ data }: { data: User[] }) {
+export default function DataTable({ data }: { data: User[] | any }) {
+  const rows: User[] = Array.isArray(data) ? data : []
   return (
     <Card>
       <div className="overflow-x-auto">
@@ -15,10 +16,10 @@ export default function DataTable({ data }: { data: User[] }) {
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 && (
+            {rows.length === 0 && (
               <tr><td className="py-4" colSpan={3}>No users yet</td></tr>
             )}
-            {data.map(u => (
+            {rows.map(u => (
               <tr key={u.id} className="border-t border-white/10">
                 <td className="py-2 pr-4">{u.email}</td>
                 <td className="py-2 pr-4">{u.is_superuser ? 'Yes' : 'No'}</td>

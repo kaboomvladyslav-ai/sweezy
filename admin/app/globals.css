@@ -15,7 +15,15 @@ html, body, :root {
 }
 
 .container-grid {
-  @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  @apply max-w-none w-full px-4 sm:px-6 lg:px-10;
+}
+
+body {
+  @apply bg-[#0b0e11] text-white;
+  background-image:
+    radial-gradient(1000px 500px at -10% -10%, rgba(255,255,255,0.06) 0%, transparent 60%),
+    radial-gradient(900px 450px at 110% 110%, rgba(255,255,255,0.04) 0%, transparent 60%);
+  background-repeat: no-repeat;
 }
 
 

@@ -11,6 +11,7 @@ class GuideBase(BaseModel):
     description: Optional[str] = None
     content: Optional[str] = None
     category: Optional[str] = None
+    image_url: Optional[str] = None
     is_published: bool = True
     version: int = 1
 

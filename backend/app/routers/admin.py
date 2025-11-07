@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..dependencies import DBSession, CurrentAdmin
 from ..models import User, Guide, Template, Checklist, Appointment
+from ..schemas import GuideCreate, TemplateCreate, ChecklistCreate
 from ..core.config import get_settings
 
 
@@ -79,5 +80,72 @@ def activity(_: CurrentAdmin, db: DBSession) -> Dict[str, Any]:
         "checklists": recent_simple(Checklist),
         "appointments": recent_simple(Appointment),
     }
+
+
+@router.get("/categories/guides")
+def guide_categories(_: CurrentAdmin) -> Dict[str, Any]:
+    # Keep in sync with Swift enum GuideCategory
+    categories = [
+        "documents", "housing", "insurance", "work", "finance", "education",
+        "healthcare", "legal", "emergency", "integration", "transport", "banking",
+    ]
+    return {"categories": categories}
+
+
+@router.post("/import/guides")
+def import_guides(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    items = payload.get("items") or []
+    created = 0
+    for raw in items:
+        try:
+            data = GuideCreate(**raw)
+            obj = Guide(
+                title=data.title,
+                slug=data.slug,
+                description=data.description,
+                content=data.content,
+                category=data.category,
+                image_url=getattr(data, "image_url", None),
+                is_published=data.is_published,
+                version=data.version,
+            )
+            db.add(obj)
+            created += 1
+        except Exception:
+            continue
+    db.commit()
+    return {"created": created}
+
+
+@router.post("/import/templates")
+def import_templates(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    items = payload.get("items") or []
+    created = 0
+    for raw in items:
+        try:
+            data = TemplateCreate(**raw)
+            obj = Template(**data.model_dump())
+            db.add(obj)
+            created += 1
+        except Exception:
+            continue
+    db.commit()
+    return {"created": created}
+
+
+@router.post("/import/checklists")
+def import_checklists(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    items = payload.get("items") or []
+    created = 0
+    for raw in items:
+        try:
+            data = ChecklistCreate(**raw)
+            obj = Checklist(**data.model_dump())
+            db.add(obj)
+            created += 1
+        except Exception:
+            continue
+    db.commit()
+    return {"created": created}
 
 

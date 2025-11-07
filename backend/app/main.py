@@ -21,6 +21,8 @@ from .routers.checklists import router as checklists_router
 from .routers.templates import router as templates_router
 from .routers.appointments import router as appointments_router
 from .routers.remote_config import router as remote_config_router
+from .routers.media import router as media_router
+from starlette.staticfiles import StaticFiles
 from .routers.admin import router as admin_router
 
 
@@ -138,5 +140,13 @@ app.include_router(templates_router, prefix=f"{API_PREFIX}/templates", tags=["te
 app.include_router(appointments_router, prefix=f"{API_PREFIX}/appointments", tags=["appointments"])
 app.include_router(remote_config_router, prefix=f"{API_PREFIX}/remote-config", tags=["remote-config"])
 app.include_router(admin_router, prefix=f"{API_PREFIX}/admin", tags=["admin"])
+app.include_router(media_router, prefix=f"{API_PREFIX}/media", tags=["media"])
+
+# Serve uploaded media
+try:
+    app.mount("/media", StaticFiles(directory="backend/uploads"), name="media")
+except Exception:
+    # directory may not exist at build time
+    pass
 
 
