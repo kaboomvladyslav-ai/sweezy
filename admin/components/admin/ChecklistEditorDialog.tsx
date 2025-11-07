@@ -5,20 +5,28 @@ import UIInput from '@/components/ui/input'
 import UIButton from '@/components/ui/button'
 
 type Checklist = { id?: string; title: string; description?: string; items: string[]; is_published?: boolean }
+type Step = { id: string; title: string; description?: string }
 
 export default function ChecklistEditorDialog({ item, onSaved }: { item?: Checklist; onSaved?: () => void }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<Checklist>({ title: '', description: '', items: [], is_published: true })
-  const [itemsText, setItemsText] = useState('')
+  const [steps, setSteps] = useState<Step[]>([])
   const [saving, setSaving] = useState(false)
-  useEffect(() => { if (item) { setForm(item); setItemsText(item.items.join('\n')) } }, [item])
+  useEffect(() => {
+    if (item) {
+      setForm(item)
+      setSteps(item.items.map((t, i) => ({ id: `${i}-${t.slice(0,10)}`, title: t })))
+    } else {
+      setSteps([{ id: 's-1', title: '' }])
+    }
+  }, [item])
 
   async function save() {
     setSaving(true)
     try {
       const method = item?.id ? 'PUT' : 'POST'
       const url = item?.id ? `/api/checklists/${item.id}` : '/api/checklists'
-      const payload = { ...form, items: itemsText.split('\n').map(s=>s.trim()).filter(Boolean) }
+      const payload = { ...form, items: steps.map(s => s.title.trim()).filter(Boolean) }
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       if (!res.ok) throw new Error(await res.text())
       setOpen(false)
@@ -29,17 +37,31 @@ export default function ChecklistEditorDialog({ item, onSaved }: { item?: Checkl
   return (
     <div>
       <UIButton onClick={() => setOpen(true)}>{item ? 'Edit' : 'Create Checklist'}</UIButton>
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <div className="text-lg font-medium mb-3">{item ? 'Edit Checklist' : 'Create Checklist'}</div>
-        <div className="space-y-3">
+      <Dialog open={open} onClose={() => setOpen(false)} size="xl">
+        <div className="text-lg font-medium mb-4">{item ? 'Edit Checklist' : 'Create Checklist'}</div>
+        <div className="grid grid-cols-1 gap-4">
           <UIInput placeholder="Title" value={form.title} onChange={e=>setForm({...form, title:e.target.value})} />
           <UIInput placeholder="Description" value={form.description} onChange={e=>setForm({...form, description:e.target.value})} />
-          <textarea className="glass w-full px-3 py-2 min-h-[160px]" placeholder="Items (one per line)" value={itemsText} onChange={e=>setItemsText(e.target.value)} />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm opacity-70">Steps</div>
+              <UIButton size="sm" onClick={()=>setSteps(s=>[...s, { id: `s-${s.length+1}`, title: '' }])}>Add Step</UIButton>
+            </div>
+            <div className="space-y-2 max-h-[50vh] overflow-auto pr-1">
+              {steps.map((s, idx) => (
+                <div key={s.id} className="glass p-3 rounded-lg flex items-center gap-2">
+                  <div className="text-xs opacity-60 w-6">{idx+1}.</div>
+                  <UIInput className="flex-1" placeholder="Step title" value={s.title} onChange={e=>setSteps(prev=>prev.map(x=>x.id===s.id?{...x, title:e.target.value}:x))} />
+                  <UIButton size="sm" variant="destructive" onClick={()=>setSteps(prev=>prev.filter(x=>x.id!==s.id))}>Delete</UIButton>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <input id="cpub" type="checkbox" checked={!!form.is_published} onChange={e=>setForm({ ...form, is_published: e.target.checked })} />
             <label htmlFor="cpub" className="text-sm opacity-80">Published</label>
           </div>
-          <UIButton onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</UIButton>
+          <div className="text-right"><UIButton onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</UIButton></div>
         </div>
       </Dialog>
     </div>

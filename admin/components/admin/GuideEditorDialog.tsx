@@ -65,7 +65,7 @@ export default function GuideEditorDialog({ guide, onSaved }: { guide?: Guide; o
   return (
     <div>
       <UIButton onClick={() => setOpen(true)}>{guide ? 'Edit' : 'Create Guide'}</UIButton>
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog open={open} onClose={() => setOpen(false)} size="xl">
         <div className="text-lg font-medium mb-3">{guide ? 'Edit Guide' : 'Create Guide'}</div>
         <div className="space-y-3">
           <UIInput placeholder="Title" value={form.title} onChange={e=>setForm({ ...form, title: e.target.value })} />

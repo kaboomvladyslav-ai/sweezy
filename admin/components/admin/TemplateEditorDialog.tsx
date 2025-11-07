@@ -29,7 +29,7 @@ export default function TemplateEditorDialog({ item, onSaved }: { item?: Templat
   return (
     <div>
       <UIButton onClick={() => setOpen(true)}>{item ? 'Edit' : 'Create Template'}</UIButton>
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog open={open} onClose={() => setOpen(false)} size="xl">
         <div className="text-lg font-medium mb-3">{item ? 'Edit Template' : 'Create Template'}</div>
         <div className="space-y-3">
           <UIInput placeholder="Name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} />
