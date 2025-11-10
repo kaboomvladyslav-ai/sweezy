@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..dependencies import DBSession, CurrentAdmin
 from ..models import User, Guide, Template, Checklist, Appointment
+from ..models.news import News
 from ..schemas import GuideCreate, TemplateCreate, ChecklistCreate
 from ..core.config import get_settings
 
@@ -25,6 +26,7 @@ def stats(_: CurrentAdmin, db: DBSession) -> Dict[str, Any]:
         "templates": db.scalar(select(func.count()).select_from(Template)) or 0,
         "checklists": db.scalar(select(func.count()).select_from(Checklist)) or 0,
         "appointments": db.scalar(select(func.count()).select_from(Appointment)) or 0,
+        "news": db.scalar(select(func.count()).select_from(News)) or 0,
     }
     return {
         "app_version": settings.APP_VERSION,
@@ -144,6 +146,38 @@ def import_guides(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Di
     db.commit()
     return {"created": created}
 
+
+@router.post("/import/news")
+def import_news(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    items = payload.get("items") or []
+    created = 0
+    for raw in items:
+        try:
+            title = raw.get("title") or "Untitled"
+            summary = raw.get("summary") or ""
+            url = raw.get("url") or ""
+            source = raw.get("source") or "Sweezy"
+            language = raw.get("language") or "uk"
+            published_at = raw.get("published_at") or raw.get("date") or None
+            image_url = raw.get("image_url")
+            if not url:
+                continue
+            obj = News(
+                id=str(__import__("uuid").uuid4()),
+                title=title,
+                summary=summary,
+                url=url,
+                source=source,
+                language=language,
+                published_at=__import__("datetime").datetime.fromisoformat(published_at) if isinstance(published_at, str) else (__import__("datetime").datetime.utcnow()),
+                image_url=image_url,
+            )
+            db.add(obj)
+            created += 1
+        except Exception:
+            continue
+    db.commit()
+    return {"created": created}
 
 @router.post("/import/templates")
 def import_templates(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:

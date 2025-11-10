@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Users, BookOpenText, FileText, Activity, CheckSquare, Calendar, SlidersHorizontal } from 'lucide-react'
+import { LayoutDashboard, Users, BookOpenText, FileText, Activity, CheckSquare, Calendar, SlidersHorizontal, Newspaper } from 'lucide-react'
 
 const items = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const items = [
   { href: '/admin/guides', label: 'Guides', icon: BookOpenText },
   { href: '/admin/templates', label: 'Templates', icon: FileText },
   { href: '/admin/checklists', label: 'Checklists', icon: CheckSquare },
+  { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/appointments', label: 'Appointments', icon: Calendar },
   { href: '/admin/config', label: 'Config', icon: SlidersHorizontal },
   { href: '/admin/monitoring', label: 'Monitoring', icon: Activity }

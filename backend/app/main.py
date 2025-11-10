@@ -22,6 +22,7 @@ from .routers.templates import router as templates_router
 from .routers.appointments import router as appointments_router
 from .routers.remote_config import router as remote_config_router
 from .routers.media import router as media_router
+from .routers.news import router as news_router
 from starlette.staticfiles import StaticFiles
 from .routers.admin import router as admin_router
 
@@ -141,6 +142,7 @@ app.include_router(appointments_router, prefix=f"{API_PREFIX}/appointments", tag
 app.include_router(remote_config_router, prefix=f"{API_PREFIX}/remote-config", tags=["remote-config"])
 app.include_router(admin_router, prefix=f"{API_PREFIX}/admin", tags=["admin"])
 app.include_router(media_router, prefix=f"{API_PREFIX}/media", tags=["media"])
+app.include_router(news_router, prefix=f"{API_PREFIX}/news", tags=["news"])
 
 # Serve uploaded media
 try:
