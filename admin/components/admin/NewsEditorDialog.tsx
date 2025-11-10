@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
+import Button from '@/components/ui/button'
 import UIInput from '@/components/ui/input'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
@@ -52,15 +52,15 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {trigger || <Button variant="primary">Create News</Button>}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{news ? 'Edit News' : 'Create News'}</DialogTitle>
-          <DialogDescription>Manage a news item that appears in What’s New.</DialogDescription>
-        </DialogHeader>
+    <div>
+      {trigger ? (
+        <span onClick={() => setIsOpen(true)}>{trigger}</span>
+      ) : (
+        <Button onClick={() => setIsOpen(true)}>Create News</Button>
+      )}
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)} size="xl">
+        <div className="text-lg font-medium mb-3">{news ? 'Edit News' : 'Create News'}</div>
+        <div className="text-sm opacity-70 mb-4">Manage a news item that appears in What’s New.</div>
         <div className="grid gap-3 py-2">
           <UIInput label="Title" value={title} onChange={e=>setTitle(e.target.value)} />
           <UIInput label="Summary" value={summary} onChange={e=>setSummary(e.target.value)} />
@@ -75,10 +75,7 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
         <div className="flex justify-end">
           <Button onClick={submit} disabled={loading}>{loading ? 'Saving…' : 'Save'}</Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </div>
   )
 }
-
-
-
