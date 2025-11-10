@@ -19,6 +19,7 @@ class News(Base):
     url: Mapped[str] = mapped_column(String(500), nullable=False)
     source: Mapped[str] = mapped_column(String(120), nullable=False, default="Sweezy")
     language: Mapped[str] = mapped_column(String(8), nullable=False, default="uk")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="published")  # 'draft' | 'published'
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False, default=datetime.utcnow)
     image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False, default=datetime.utcnow)

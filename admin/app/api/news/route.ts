@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { serverFetch } from '@/lib/server'
 
-export async function GET() {
-  const res = await serverFetch('/news/?limit=100')
+export async function GET(req: Request) {
+  const url = new URL(req.url)
+  const qs = url.searchParams.toString()
+  const path = qs ? `/news/?${qs}` : '/news/?limit=100'
+  const res = await serverFetch(path)
   const text = await res.text()
   try {
     return new NextResponse(text, { status: res.status })

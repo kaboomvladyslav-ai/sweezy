@@ -20,6 +20,7 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
   const [language, setLanguage] = useState(news?.language ?? 'uk')
   const [publishedAt, setPublishedAt] = useState<string>(news?.published_at ?? new Date().toISOString())
   const [imageUrl, setImageUrl] = useState(news?.image_url ?? '')
+  const [status, setStatus] = useState<( 'draft' | 'published')>((news as any)?.status ?? 'published')
   const [loading, setLoading] = useState(false)
   const qc = useQueryClient()
   const API_ORIGIN = (()=>{ try { return new URL(API_URL).origin } catch { return '' } })()
@@ -43,7 +44,7 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
   const submit = async () => {
     setLoading(true)
     try {
-      const payload = { title, summary, content: content || undefined, url, source, language, published_at: publishedAt, image_url: imageUrl || undefined }
+      const payload = { title, summary, content: content || undefined, url, source, language, status, published_at: publishedAt, image_url: imageUrl || undefined }
       const res = await fetch(news ? `/api/news/${news.id}` : `/api/news`, {
         method: news ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,6 +100,17 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
               <div className="space-y-1">
                 <div className="text-sm opacity-70">Source</div>
                 <UIInput placeholder="Sweezy" value={source} onChange={e=>setSource(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm opacity-70">Status</div>
+                <UISelect
+                  value={status}
+                  onChange={(v)=>setStatus((v as any) ?? 'published')}
+                  options={[
+                    { value: 'published', label: 'published' },
+                    { value: 'draft', label: 'draft' },
+                  ]}
+                />
               </div>
               <div className="space-y-1">
                 <div className="text-sm opacity-70">Language</div>

@@ -9,8 +9,8 @@ from ..dependencies import get_db, CurrentAdmin
 router = APIRouter()
 
 @router.get("/", response_model=List[NewsOut])
-def list_news(language: Optional[str] = None, limit: int = 50, db: Session = Depends(get_db)):
-  return NewsService.list_news(db, language=language, limit=limit)
+def list_news(language: Optional[str] = None, status: Optional[str] = None, include_drafts: bool = False, limit: int = 50, db: Session = Depends(get_db)):
+  return NewsService.list_news(db, language=language, limit=limit, status=status, include_drafts=include_drafts)
 
 @router.get("/{news_id}", response_model=NewsOut)
 def get_news(news_id: str, db: Session = Depends(get_db)):

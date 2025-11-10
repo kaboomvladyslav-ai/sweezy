@@ -12,6 +12,7 @@ class NewsBase(BaseModel):
     url: HttpUrl
     source: str = "Sweezy"
     language: str = "uk"
+    status: str = Field(default="published", description="draft|published")
     published_at: datetime
     image_url: Optional[HttpUrl] = None
 
@@ -27,6 +28,7 @@ class NewsUpdate(BaseModel):
     url: Optional[HttpUrl] = None
     source: Optional[str] = None
     language: Optional[str] = None
+    status: Optional[str] = None
     published_at: Optional[datetime] = None
     image_url: Optional[HttpUrl] = None
 
