@@ -1,8 +1,11 @@
 "use client"
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { News } from '@/lib/types'
 import NewsEditorDialog from './NewsEditorDialog'
 import Button from '@/components/ui/button'
+import UISelect from '@/components/ui/select'
+import NewsRSSImportDialog from './NewsRSSImportDialog'
 
 async function fetchNews(qs = ''): Promise<News[]> {
   try {
@@ -36,33 +39,38 @@ export default function NewsList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-3 gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="text-sm opacity-70">Total: {data.length}</div>
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-3">
             <span className="text-sm opacity-70">Status</span>
-            <select
-              className="glass px-2 py-1 rounded"
+            <UISelect
+              className="min-w-[120px]"
               value={status}
-              onChange={e=>setStatus(e.target.value as any)}
-            >
-              <option value="all">all</option>
-              <option value="published">published</option>
-              <option value="draft">draft</option>
-            </select>
+              onChange={(v)=>setStatus(v as any)}
+              options={[
+                { value: 'all', label: 'all' },
+                { value: 'published', label: 'published' },
+                { value: 'draft', label: 'draft' },
+              ]}
+            />
             <span className="text-sm opacity-70">Lang</span>
-            <select
-              className="glass px-2 py-1 rounded"
+            <UISelect
+              className="min-w-[100px]"
               value={language}
-              onChange={e=>setLanguage(e.target.value)}
-            >
-              <option value="all">all</option>
-              <option value="uk">uk</option>
-              <option value="en">en</option>
-              <option value="ru">ru</option>
-            </select>
+              onChange={setLanguage}
+              options={[
+                { value: 'all', label: 'all' },
+                { value: 'uk', label: 'uk' },
+                { value: 'en', label: 'en' },
+                { value: 'ru', label: 'ru' },
+              ]}
+            />
           </div>
         </div>
-        <NewsEditorDialog trigger={<Button className="px-3 py-2">Create</Button>} />
+        <div className="flex items-center gap-2">
+          <NewsRSSImportDialog />
+          <NewsEditorDialog trigger={<Button className="px-3 py-2">Create</Button>} />
+        </div>
       </div>
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-soft">
         <table className="min-w-full text-sm">

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 import re
+import time
+from datetime import datetime
+from urllib.parse import urlparse
 
 from fastapi import APIRouter
 from sqlalchemy import func, select
@@ -12,6 +15,9 @@ from ..models import User, Guide, Template, Checklist, Appointment
 from ..models.news import News
 from ..schemas import GuideCreate, TemplateCreate, ChecklistCreate
 from ..core.config import get_settings
+from ..routers.media import UPLOAD_DIR
+import feedparser
+import httpx
 
 
 router = APIRouter()
@@ -145,6 +151,93 @@ def import_guides(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Di
             continue
     db.commit()
     return {"created": created}
+
+@router.post("/import/news/rss")
+def import_news_rss(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    """
+    Import news items from an RSS/Atom feed.
+    Body:
+      - feed_url: str
+      - language: str = 'uk'
+      - status: 'draft'|'published' = 'draft'
+      - max_items: int = 50
+      - download_images: bool = True
+      - extract_full: bool = False (reserved)
+    """
+    feed_url = payload.get("feed_url")
+    if not feed_url:
+        return {"created": 0, "updated": 0, "skipped": 0, "error": "feed_url is required"}
+    language = payload.get("language", "uk")
+    status = payload.get("status", "draft")
+    max_items = int(payload.get("max_items", 50))
+    download_images = bool(payload.get("download_images", True))
+
+    parsed = feedparser.parse(feed_url)
+    created = updated = skipped = 0
+    src = parsed.feed.get("title") or (urlparse(feed_url).hostname or "RSS")
+
+    client = httpx.Client(timeout=10)
+    for entry in parsed.entries[:max_items]:
+        try:
+            url = entry.get("link")
+            if not url:
+                skipped += 1
+                continue
+            existing = db.query(News).filter(News.url == url).first()
+            title = (entry.get("title") or "Untitled").strip()
+            summary = entry.get("summary") or entry.get("description") or ""
+            # published
+            pub_dt = datetime.utcnow()
+            if entry.get("published_parsed"):
+                pub_dt = datetime.fromtimestamp(time.mktime(entry.published_parsed))
+            # image
+            image_url = None
+            media = entry.get("media_content") or entry.get("enclosures") or []
+            if isinstance(media, list) and media:
+                m0 = media[0]
+                if isinstance(m0, dict):
+                    image_url = m0.get("url")
+            if not image_url and isinstance(summary, str):
+                import re as _re
+                m = _re.search(r'<img[^>]+src="([^"]+)"', summary)
+                if m:
+                    image_url = m.group(1)
+            # optionally download image
+            if download_images and image_url:
+                try:
+                    r = client.get(image_url)
+                    if r.status_code == 200:
+                        ext = ".jpg"
+                        name = f"{__import__('uuid').uuid4()}{ext}"
+                        (UPLOAD_DIR / name).write_bytes(r.content)
+                        image_url = f"/media/{name}"
+                except Exception:
+                    pass
+
+            data = {
+                "title": title,
+                "summary": summary,
+                "content": None,
+                "url": url,
+                "source": src,
+                "language": language,
+                "status": status,
+                "published_at": pub_dt,
+                "image_url": image_url,
+            }
+            if existing:
+                from ..services.news_service import NewsService as _NS
+                _NS.update(db, existing, **data)
+                updated += 1
+            else:
+                from ..services.news_service import NewsService as _NS
+                _NS.create(db, **data)
+                created += 1
+        except Exception:
+            skipped += 1
+            continue
+    client.close()
+    return {"created": created, "updated": updated, "skipped": skipped}
 
 
 @router.post("/import/news")

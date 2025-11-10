@@ -22,6 +22,7 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
   const [imageUrl, setImageUrl] = useState(news?.image_url ?? '')
   const [status, setStatus] = useState<( 'draft' | 'published')>((news as any)?.status ?? 'published')
   const [loading, setLoading] = useState(false)
+  const [showPreview, setShowPreview] = useState(true)
   const qc = useQueryClient()
   const API_ORIGIN = (()=>{ try { return new URL(API_URL).origin } catch { return '' } })()
 
@@ -70,8 +71,17 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
       )}
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} size="xl">
         <div className="text-lg font-medium mb-3">{news ? 'Edit News' : 'Create News'}</div>
-        <div className="text-sm opacity-70 mb-4">Manage a news item that appears in What’s New.</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="text-sm opacity-70 mb-4 flex items-center justify-between">
+          <span>Manage a news item that appears in What’s New.</span>
+          <button
+            type="button"
+            className="glass px-3 py-1.5 rounded-lg text-sm"
+            onClick={()=>setShowPreview(v=>!v)}
+          >
+            {showPreview ? 'Hide preview' : 'Show preview'}
+          </button>
+        </div>
+        <div className={showPreview ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "grid grid-cols-1 gap-6"}>
           <div className="space-y-3">
             <div className="space-y-1">
               <div className="text-sm opacity-70">Title</div>
@@ -174,6 +184,7 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
               <Button onClick={submit} disabled={loading || !title || !url}>{loading ? 'Saving…' : 'Save'}</Button>
             </div>
           </div>
+          {showPreview && (
           <div className="space-y-2">
             <div className="text-sm opacity-70">Preview (как в приложении)</div>
             <div className="glass rounded-xl overflow-hidden">
@@ -202,6 +213,7 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
               </div>
             </div>
           </div>
+          )}
         </div>
       </Dialog>
     </div>
