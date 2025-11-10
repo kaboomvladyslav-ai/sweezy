@@ -6,6 +6,8 @@ import contextlib
 from typing import List
 import subprocess
 from pathlib import Path
+import os
+import time as _time
 
 import time
 import uuid
@@ -36,9 +38,28 @@ except Exception as exc:
 
 
 async def _background_tick() -> None:
+    from .core.database import SessionLocal
+    from .models.rss_feed import RSSFeed
+    from .services.rss_importer import RSSImporter
+    interval = int(os.getenv("FEED_IMPORT_INTERVAL_SEC", "900"))
+    last_run = 0.0
     while True:
         await asyncio.sleep(60)
-        # Placeholder for periodic background tasks (e.g. cache refresh)
+        now = _time.monotonic()
+        if now - last_run < interval:
+            continue
+        last_run = now
+        try:
+            with SessionLocal() as db:
+                feeds: List[RSSFeed] = db.query(RSSFeed).filter(RSSFeed.enabled == True).all()  # noqa: E712
+                for f in feeds:
+                    try:
+                        RSSImporter.import_feed_record(db, f)
+                    except Exception:
+                        continue
+        except Exception:
+            # never break background loop
+            pass
 
 
 @asynccontextmanager

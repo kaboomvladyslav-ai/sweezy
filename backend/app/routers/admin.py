@@ -16,6 +16,8 @@ from ..models.news import News
 from ..schemas import GuideCreate, TemplateCreate, ChecklistCreate
 from ..core.config import get_settings
 from ..routers.media import UPLOAD_DIR
+from ..models.rss_feed import RSSFeed
+from ..services.rss_importer import RSSImporter
 import feedparser
 import httpx
 
@@ -356,6 +358,66 @@ def import_news(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict
             continue
     db.commit()
     return {"created": created}
+
+@router.get("/rss-feeds")
+def list_rss_feeds(_: CurrentAdmin, db: DBSession) -> List[Dict[str, Any]]:
+    rows = db.query(RSSFeed).order_by(RSSFeed.created_at.desc()).all()
+    return [{
+        "id": r.id,
+        "url": r.url,
+        "language": r.language,
+        "status": r.status,
+        "enabled": bool(r.enabled),
+        "max_items": r.max_items,
+        "download_images": bool(r.download_images),
+        "last_imported_at": r.last_imported_at.isoformat() if r.last_imported_at else None,
+    } for r in rows]
+
+@router.post("/rss-feeds")
+def create_rss_feed(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    r = RSSFeed(
+        id=str(__import__("uuid").uuid4()),
+        url=payload["url"],
+        language=payload.get("language", "uk"),
+        status=payload.get("status", "draft"),
+        enabled=bool(payload.get("enabled", True)),
+        max_items=int(payload.get("max_items", 20)),
+        download_images=bool(payload.get("download_images", True)),
+        created_at=__import__("datetime").datetime.utcnow(),
+        updated_at=__import__("datetime").datetime.utcnow(),
+    )
+    db.add(r); db.commit()
+    return {"id": r.id}
+
+@router.delete("/rss-feeds/{feed_id}")
+def delete_rss_feed(feed_id: str, db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    r = db.query(RSSFeed).filter(RSSFeed.id == feed_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(r); db.commit()
+    return {"ok": True}
+
+@router.post("/rss-feeds/{feed_id}/import")
+def run_rss_feed_import(feed_id: str, db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    r = db.query(RSSFeed).filter(RSSFeed.id == feed_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Not found")
+    return RSSImporter.import_feed_record(db, r)
+
+@router.patch("/rss-feeds/{feed_id}")
+def update_rss_feed(feed_id: str, payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    r = db.query(RSSFeed).filter(RSSFeed.id == feed_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Not found")
+    for k in ["url","language","status"]:
+        if k in payload and payload[k] is not None:
+            setattr(r, k, payload[k])
+    if "enabled" in payload: r.enabled = bool(payload["enabled"])
+    if "max_items" in payload: r.max_items = int(payload["max_items"])
+    if "download_images" in payload: r.download_images = bool(payload["download_images"])
+    r.updated_at = __import__("datetime").datetime.utcnow()
+    db.add(r); db.commit()
+    return {"ok": True}
 
 @router.post("/import/templates")
 def import_templates(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
