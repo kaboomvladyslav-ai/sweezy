@@ -1,2 +1,83 @@
-"use client"\nimport { useEffect, useState } from 'react'\nimport { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'\nimport { Button } from '@/components/ui/button'\nimport UIInput from '@/components/ui/input'\nimport { useQueryClient } from '@tanstack/react-query'\nimport { toast } from 'react-hot-toast'\nimport { News } from '@/lib/types'\n\nexport default function NewsEditorDialog({ news, trigger }: { news?: News; trigger?: React.ReactNode }) {\n  const [isOpen, setIsOpen] = useState(false)\n  const [title, setTitle] = useState(news?.title ?? '')\n  const [summary, setSummary] = useState(news?.summary ?? '')\n  const [url, setUrl] = useState(news?.url ?? '')\n  const [source, setSource] = useState(news?.source ?? 'Sweezy')\n  const [language, setLanguage] = useState(news?.language ?? 'uk')\n  const [publishedAt, setPublishedAt] = useState<string>(news?.published_at ?? new Date().toISOString())\n  const [imageUrl, setImageUrl] = useState(news?.image_url ?? '')\n  const [loading, setLoading] = useState(false)\n  const qc = useQueryClient()\n\n  useEffect(() => {\n    if (isOpen) {\n      setTitle(news?.title ?? '')\n      setSummary(news?.summary ?? '')\n      setUrl(news?.url ?? '')\n      setSource(news?.source ?? 'Sweezy')\n      setLanguage(news?.language ?? 'uk')\n      setPublishedAt(news?.published_at ?? new Date().toISOString())\n      setImageUrl(news?.image_url ?? '')\n    }\n  }, [isOpen, news])\n\n  const submit = async () => {\n    setLoading(true)\n    try {\n      const payload = { title, summary, url, source, language, published_at: publishedAt, image_url: imageUrl || undefined }\n      const res = await fetch(news ? `/api/news/${news.id}` : `/api/news`, {\n        method: news ? 'PUT' : 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify(payload)\n      })\n      if (!res.ok) throw new Error(await res.text())\n      toast.success(news ? 'News updated' : 'News created')\n      setIsOpen(false)\n      qc.invalidateQueries({ queryKey: ['news'] })\n    } catch (e: any) {\n      toast.error(e?.message || 'Failed to save news')\n    } finally {\n      setLoading(false)\n    }\n  }\n\n  return (\n    <Dialog open={isOpen} onOpenChange={setIsOpen}>\n      <DialogTrigger asChild>\n        {trigger || <Button variant=\"primary\">Create News</Button>}\n      </DialogTrigger>\n      <DialogContent className=\"sm:max-w-2xl max-h-[85vh] overflow-y-auto\">\n        <DialogHeader>\n          <DialogTitle>{news ? 'Edit News' : 'Create News'}</DialogTitle>\n          <DialogDescription>Manage a news item that appears in What’s New.</DialogDescription>\n        </DialogHeader>\n        <div className=\"grid gap-3 py-2\">\n          <UIInput label=\"Title\" value={title} onChange={e=>setTitle(e.target.value)} />\n          <UIInput label=\"Summary\" value={summary} onChange={e=>setSummary(e.target.value)} />\n          <UIInput label=\"URL\" value={url} onChange={e=>setUrl(e.target.value)} />\n          <div className=\"grid grid-cols-1 sm:grid-cols-3 gap-2\">\n            <UIInput label=\"Source\" value={source} onChange={e=>setSource(e.target.value)} />\n            <UIInput label=\"Language\" value={language} onChange={e=>setLanguage(e.target.value)} />\n            <UIInput label=\"Published At (ISO)\" value={publishedAt} onChange={e=>setPublishedAt(e.target.value)} />\n          </div>\n          <UIInput label=\"Image URL\" value={imageUrl} onChange={e=>setImageUrl(e.target.value)} />\n        </div>\n        <div className=\"flex justify-end\">\n          <Button onClick={submit} disabled={loading}>{loading ? 'Saving…' : 'Save'}</Button>\n        </div>\n      </DialogContent>\n    </Dialog>\n  )\n}\n\n*** End Patch"} ?>>
+"use client"
+import { useEffect, useState } from 'react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import UIInput from '@/components/ui/input'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'react-hot-toast'
+import { News } from '@/lib/types'
+
+export default function NewsEditorDialog({ news, trigger }: { news?: News; trigger?: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [title, setTitle] = useState(news?.title ?? '')
+  const [summary, setSummary] = useState(news?.summary ?? '')
+  const [url, setUrl] = useState(news?.url ?? '')
+  const [source, setSource] = useState(news?.source ?? 'Sweezy')
+  const [language, setLanguage] = useState(news?.language ?? 'uk')
+  const [publishedAt, setPublishedAt] = useState<string>(news?.published_at ?? new Date().toISOString())
+  const [imageUrl, setImageUrl] = useState(news?.image_url ?? '')
+  const [loading, setLoading] = useState(false)
+  const qc = useQueryClient()
+
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(news?.title ?? '')
+      setSummary(news?.summary ?? '')
+      setUrl(news?.url ?? '')
+      setSource(news?.source ?? 'Sweezy')
+      setLanguage(news?.language ?? 'uk')
+      setPublishedAt(news?.published_at ?? new Date().toISOString())
+      setImageUrl(news?.image_url ?? '')
+    }
+  }, [isOpen, news])
+
+  const submit = async () => {
+    setLoading(true)
+    try {
+      const payload = { title, summary, url, source, language, published_at: publishedAt, image_url: imageUrl || undefined }
+      const res = await fetch(news ? `/api/news/${news.id}` : `/api/news`, {
+        method: news ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) throw new Error(await res.text())
+      toast.success(news ? 'News updated' : 'News created')
+      setIsOpen(false)
+      qc.invalidateQueries({ queryKey: ['news'] })
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to save news')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        {trigger || <Button variant="primary">Create News</Button>}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{news ? 'Edit News' : 'Create News'}</DialogTitle>
+          <DialogDescription>Manage a news item that appears in What’s New.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 py-2">
+          <UIInput label="Title" value={title} onChange={e=>setTitle(e.target.value)} />
+          <UIInput label="Summary" value={summary} onChange={e=>setSummary(e.target.value)} />
+          <UIInput label="URL" value={url} onChange={e=>setUrl(e.target.value)} />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <UIInput label="Source" value={source} onChange={e=>setSource(e.target.value)} />
+            <UIInput label="Language" value={language} onChange={e=>setLanguage(e.target.value)} />
+            <UIInput label="Published At (ISO)" value={publishedAt} onChange={e=>setPublishedAt(e.target.value)} />
+          </div>
+          <UIInput label="Image URL" value={imageUrl} onChange={e=>setImageUrl(e.target.value)} />
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={submit} disabled={loading}>{loading ? 'Saving…' : 'Save'}</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 

@@ -1,2 +1,26 @@
-import Card from '@/components/Card'\nimport KPI from '@/components/KPI'\nimport { serverFetch } from '@/lib/server'\nimport NewsList from '@/components/admin/NewsList'\n\nexport default async function NewsPage() {\n  const statsRes = await serverFetch('/admin/stats').catch(() => null)\n  const stats = statsRes && statsRes.ok ? await statsRes.json().catch(() => ({ counts: {} })) : { counts: {} }\n\n  return (\n    <section className=\"space-y-8\">\n      <div className=\"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6\">\n        <KPI title=\"Total News\" value={stats?.counts?.news ?? 0} icon=\"text\" delta={0} />\n        <KPI title=\"Total Guides\" value={stats?.counts?.guides ?? 0} icon=\"book\" delta={0} />\n        <KPI title=\"Total Templates\" value={stats?.counts?.templates ?? 0} icon=\"fileText\" delta={0} />\n        <KPI title=\"Total Checklists\" value={stats?.counts?.checklists ?? 0} icon=\"checkSquare\" delta={0} />\n        <KPI title=\"Server Status\" value={'Ready'} icon=\"server\" delta={0} />\n      </div>\n      <Card title=\"News\">\n        <NewsList />\n      </Card>\n    </section>\n  )\n}\n\n*** End Patch```  %}
+import Card from '@/components/Card'
+import KPI from '@/components/KPI'
+import { serverFetch } from '@/lib/server'
+import NewsList from '@/components/admin/NewsList'
+
+export default async function NewsPage() {
+  const statsRes = await serverFetch('/admin/stats').catch(() => null)
+  const stats = statsRes && statsRes.ok ? await statsRes.json().catch(() => ({ counts: {} })) : { counts: {} }
+
+  return (
+    <section className="space-y-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <KPI title="Total News" value={stats?.counts?.news ?? 0} icon="text" delta={0} />
+        <KPI title="Total Guides" value={stats?.counts?.guides ?? 0} icon="book" delta={0} />
+        <KPI title="Total Templates" value={stats?.counts?.templates ?? 0} icon="fileText" delta={0} />
+        <KPI title="Total Checklists" value={stats?.counts?.checklists ?? 0} icon="checkSquare" delta={0} />
+        <KPI title="Server Status" value={'Ready'} icon="server" delta={0} />
+      </div>
+      <Card title="News">
+        <NewsList />
+      </Card>
+    </section>
+  )
+}
+
 
