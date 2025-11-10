@@ -13,8 +13,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  // Admin create must go through admin endpoint
-  const res = await serverFetch('/admin/news', {
+  const res = await serverFetch('/news', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
