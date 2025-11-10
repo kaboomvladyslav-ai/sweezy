@@ -15,6 +15,7 @@ class News(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
     url: Mapped[str] = mapped_column(String(500), nullable=False)
     source: Mapped[str] = mapped_column(String(120), nullable=False, default="Sweezy")
     language: Mapped[str] = mapped_column(String(8), nullable=False, default="uk")

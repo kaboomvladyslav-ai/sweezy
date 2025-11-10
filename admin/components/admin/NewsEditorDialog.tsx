@@ -4,6 +4,7 @@ import { Dialog } from '@/components/ui/dialog'
 import Button from '@/components/ui/button'
 import UIInput from '@/components/ui/input'
 import UISelect from '@/components/ui/select'
+import MarkdownEditor from '@/components/admin/MarkdownEditor'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { News } from '@/lib/types'
@@ -13,6 +14,7 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
   const [isOpen, setIsOpen] = useState(false)
   const [title, setTitle] = useState(news?.title ?? '')
   const [summary, setSummary] = useState(news?.summary ?? '')
+  const [content, setContent] = useState(news?.content ?? '')
   const [url, setUrl] = useState(news?.url ?? '')
   const [source, setSource] = useState(news?.source ?? 'Sweezy')
   const [language, setLanguage] = useState(news?.language ?? 'uk')
@@ -41,7 +43,7 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
   const submit = async () => {
     setLoading(true)
     try {
-      const payload = { title, summary, url, source, language, published_at: publishedAt, image_url: imageUrl || undefined }
+      const payload = { title, summary, content: content || undefined, url, source, language, published_at: publishedAt, image_url: imageUrl || undefined }
       const res = await fetch(news ? `/api/news/${news.id}` : `/api/news`, {
         method: news ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,6 +85,10 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
                 value={summary}
                 onChange={e=>setSummary(e.target.value)}
               />
+            </div>
+            <div className="space-y-1">
+              <div className="text-sm opacity-70">Content (Markdown)</div>
+              <MarkdownEditor value={content} onChange={setContent} placeholder="Полный текст статьи в Markdown" />
             </div>
             <div className="space-y-1">
               <div className="text-sm opacity-70">Link URL</div>
@@ -170,14 +176,17 @@ export default function NewsEditorDialog({ news, trigger }: { news?: News; trigg
                 </div>
                 <div className="text-lg font-semibold">{title || 'Заголовок новости'}</div>
                 {summary && <div className="opacity-80 text-sm">{summary}</div>}
-                <a
-                  href={url || '#'}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-cyan-300 hover:text-cyan-200 text-sm"
-                >
-                  Открыть ссылку
-                </a>
+                {content && <div className="opacity-70 text-xs">Статья откроется внутри приложения</div>}
+                {!content && url && (
+                  <a
+                    href={url || '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 text-cyan-300 hover:text-cyan-200 text-sm"
+                  >
+                    Открыть ссылку
+                  </a>
+                )}
               </div>
             </div>
           </div>

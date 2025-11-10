@@ -9,6 +9,7 @@ export type News = {
   id: string
   title: string
   summary: string
+  content?: string
   url: string
   source: string
   language: string

@@ -27,6 +27,7 @@ class NewsService:
       id=str(uuid4()),
       title=data["title"],
       summary=data.get("summary", ""),
+      content=data.get("content"),
       url=str(data["url"]),
       source=data.get("source", "Sweezy"),
       language=data.get("language", "uk"),

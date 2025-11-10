@@ -8,6 +8,7 @@ from pydantic import BaseModel, HttpUrl, Field
 class NewsBase(BaseModel):
     title: str = Field(..., max_length=300)
     summary: str = ""
+    content: Optional[str] = None
     url: HttpUrl
     source: str = "Sweezy"
     language: str = "uk"
@@ -22,6 +23,7 @@ class NewsCreate(NewsBase):
 class NewsUpdate(BaseModel):
     title: Optional[str] = None
     summary: Optional[str] = None
+    content: Optional[str] = None
     url: Optional[HttpUrl] = None
     source: Optional[str] = None
     language: Optional[str] = None
