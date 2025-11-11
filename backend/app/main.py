@@ -27,6 +27,7 @@ from .routers.media import router as media_router
 from .routers.news import router as news_router
 from starlette.staticfiles import StaticFiles
 from .routers.admin import router as admin_router
+from .routers.ai import router as ai_router
 
 
 settings = get_settings()
@@ -164,6 +165,7 @@ app.include_router(remote_config_router, prefix=f"{API_PREFIX}/remote-config", t
 app.include_router(admin_router, prefix=f"{API_PREFIX}/admin", tags=["admin"])
 app.include_router(media_router, prefix=f"{API_PREFIX}/media", tags=["media"])
 app.include_router(news_router, prefix=f"{API_PREFIX}/news", tags=["news"])
+app.include_router(ai_router, prefix=f"{API_PREFIX}/ai", tags=["ai"])
 
 # Serve uploaded media
 try:
