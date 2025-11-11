@@ -93,7 +93,7 @@ def _fallback_generate(payload: CVSuggestRequest) -> str:
 
 
 @router.post("/cv-suggest", response_model=CVSuggestResponse)
-def cv_suggest(payload: CVSuggestRequest, _: CurrentAdmin, db: Session = Depends(get_db)) -> CVSuggestResponse:
+def cv_suggest(payload: CVSuggestRequest, db: Session = Depends(get_db)) -> CVSuggestResponse:
     """
     Suggest HR-style text based on CV data.
     Uses OpenAI if OPENAI_API_KEY is set, otherwise deterministic fallback.
