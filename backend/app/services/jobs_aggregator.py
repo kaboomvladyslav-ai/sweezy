@@ -68,7 +68,7 @@ def _parse_date(value) -> datetime | None:
     return None
 
 
-async def search_jobs(q: str, canton: str | None, page: int, per_page: int) -> Tuple[List[JobItem], Dict[str, int]]:
+async def search_jobs(q: str | None, canton: str | None, page: int, per_page: int) -> Tuple[List[JobItem], Dict[str, int]]:
     """
     Fetch jobs from Indeed RapidAPI and optionally RAV Job-Room API, merge and sort by date desc.
     """
@@ -85,12 +85,24 @@ async def search_jobs(q: str, canton: str | None, page: int, per_page: int) -> T
                 "x-rapidapi-host": host,
             }
             # Try a few common endpoint/param variants used by different Indeed RapidAPI packs
-            variants = [
-                (f"https://{host}/jobs/search", {"query": q, "location": f"{canton or ''}, Switzerland".strip(", "), "country": "CH", "page_id": str(max(page, 1))}),
-                (f"https://{host}/jobs/search", {"q": q, "location": f"{canton or ''}, Switzerland".strip(", "), "country": "CH", "page": str(max(page, 1))}),
-                (f"https://{host}/search", {"query": q, "location": f"{canton or ''}, Switzerland".strip(", "), "country": "CH", "page": str(max(page, 1))}),
-                (f"https://{host}/search", {"q": q, "l": f"{canton or ''}, Switzerland".strip(", "), "page": str(max(page, 1))}),
-            ]
+            location_text = f"{canton or ''}, Switzerland".strip(", ")
+            query = (q or "").strip()
+            variants = []
+            if query:
+                variants.extend([
+                    (f"https://{host}/jobs/search", {"query": query, "location": location_text, "country": "CH", "page_id": str(max(page, 1))}),
+                    (f"https://{host}/jobs/search", {"q": query, "location": location_text, "country": "CH", "page": str(max(page, 1))}),
+                    (f"https://{host}/search", {"query": query, "location": location_text, "country": "CH", "page": str(max(page, 1))}),
+                    (f"https://{host}/search", {"q": query, "l": location_text, "page": str(max(page, 1))}),
+                ])
+            else:
+                # No query: try endpoints without query to get general listings
+                variants.extend([
+                    (f"https://{host}/jobs/search", {"location": location_text, "country": "CH", "page_id": str(max(page, 1))}),
+                    (f"https://{host}/jobs/search", {"location": location_text, "country": "CH", "page": str(max(page, 1))}),
+                    (f"https://{host}/search", {"location": location_text, "country": "CH", "page": str(max(page, 1))}),
+                    (f"https://{host}/search", {"l": location_text, "page": str(max(page, 1))}),
+                ])
             success = False
             for url, params in variants:
                 try:
