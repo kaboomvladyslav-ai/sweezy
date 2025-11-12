@@ -9,6 +9,7 @@ class TemplateBase(BaseModel):
     name: str
     category: Optional[str] = None
     content: str
+    status: Optional[str] = None
 
 
 class TemplateCreate(TemplateBase):

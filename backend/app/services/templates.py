@@ -11,8 +11,13 @@ from ..schemas import TemplateCreate, TemplateUpdate
 
 class TemplateService:
     @staticmethod
-    def list(db: Session, *, offset: int = 0, limit: int = 100) -> List[Template]:
-        stmt = select(Template).offset(offset).limit(limit)
+    def list(db: Session, *, offset: int = 0, limit: int = 100, status: str | None = None, include_drafts: bool = False) -> List[Template]:
+        stmt = select(Template)
+        if status:
+            stmt = stmt.where(getattr(Template, "status", None) == status)  # type: ignore[attr-defined]
+        elif not include_drafts and hasattr(Template, "status"):
+            stmt = stmt.where(Template.status == "published")  # type: ignore[attr-defined]
+        stmt = stmt.offset(offset).limit(limit)
         return list(db.execute(stmt).scalars().all())
 
     @staticmethod

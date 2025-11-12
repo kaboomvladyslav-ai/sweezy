@@ -1,6 +1,7 @@
+"use client"
 import Card from './Card'
 
-type User = { id: string; email: string; is_superuser: boolean; created_at: string }
+type User = { id: string; email: string; is_superuser: boolean; role?: string; created_at: string }
 
 export default function DataTable({ data }: { data: User[] | any }) {
   const rows: User[] = Array.isArray(data) ? data : []
@@ -11,18 +12,18 @@ export default function DataTable({ data }: { data: User[] | any }) {
           <thead className="text-left opacity-70">
             <tr>
               <th className="py-2 pr-4">Email</th>
-              <th className="py-2 pr-4">Admin</th>
+              <th className="py-2 pr-4">Role</th>
               <th className="py-2 pr-4">Created</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
-              <tr><td className="py-4" colSpan={3}>No users yet</td></tr>
-            )}
+            {rows.length === 0 && (<tr><td className="py-4" colSpan={3}>No users yet</td></tr>)}
             {rows.map(u => (
               <tr key={u.id} className="border-t border-white/10">
                 <td className="py-2 pr-4">{u.email}</td>
-                <td className="py-2 pr-4">{u.is_superuser ? 'Yes' : 'No'}</td>
+                <td className="py-2 pr-4">
+                  <RoleSelect userId={u.id} defaultValue={u.role || (u.is_superuser ? 'admin' : 'viewer')} />
+                </td>
                 <td className="py-2 pr-4">{new Date(u.created_at).toLocaleString()}</td>
               </tr>
             ))}
@@ -30,6 +31,21 @@ export default function DataTable({ data }: { data: User[] | any }) {
         </table>
       </div>
     </Card>
+  )
+}
+
+function RoleSelect({ userId, defaultValue }: { userId: string; defaultValue: string }) {
+  async function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const role = e.target.value
+    await fetch(`/api/admin/users/${userId}/role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) })
+  }
+  return (
+    <select defaultValue={defaultValue} onChange={onChange} className="glass px-2 py-1 rounded-md">
+      <option value="admin">admin</option>
+      <option value="editor">editor</option>
+      <option value="translator">translator</option>
+      <option value="viewer">viewer</option>
+    </select>
   )
 }
 

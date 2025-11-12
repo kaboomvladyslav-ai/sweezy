@@ -10,6 +10,7 @@ class ChecklistBase(BaseModel):
     description: Optional[str] = None
     items: List[str] = []
     is_published: bool = True
+    status: Optional[str] = None
 
 
 class ChecklistCreate(ChecklistBase):

@@ -1,28 +1,33 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
 import UIButton from '@/components/ui/button'
+import UISelect from '@/components/ui/select'
 import UIInput from '@/components/ui/input'
 import GuideEditorDialog from './GuideEditorDialog'
 
-type Guide = { id: string; title: string; slug: string; category?: string; description?: string; is_published?: boolean }
+type Guide = { id: string; title: string; slug: string; category?: string; description?: string; is_published?: boolean; status?: string }
 
 export default function GuidesList() {
   const [items, setItems] = useState<Guide[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
   const [editing, setEditing] = useState<Guide | undefined>(undefined)
+  const [status, setStatus] = useState<'all'|'published'|'draft'>('all')
 
   async function load() {
     setLoading(true)
     try {
-      const res = await fetch('/api/guides')
+      const params = new URLSearchParams()
+      params.set('include_drafts','true')
+      if (status !== 'all') params.set('status', status)
+      const res = await fetch(`/api/guides?${params.toString()}`)
       if (!res.ok) { setItems([]); return }
       const data = await res.json().catch(()=>[])
       setItems(Array.isArray(data) ? data : [])
     } catch { setItems([]) } finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [status])
 
   const filtered = useMemo(() => items.filter(g => (g.title + g.slug + (g.category||''))
     .toLowerCase().includes(q.toLowerCase())), [items, q])
@@ -30,7 +35,11 @@ export default function GuidesList() {
   return (
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <UIInput placeholder="Search guides…" value={q} onChange={e=>setQ(e.target.value)} className="w-full sm:max-w-xs" />
+        <div className="flex items-center gap-2">
+          <UIInput placeholder="Search guides…" value={q} onChange={e=>setQ(e.target.value)} className="w-full sm:max-w-xs" />
+          <span className="text-sm opacity-70">Status</span>
+          <UISelect className="min-w-[120px]" value={status} onChange={(v)=>setStatus(v as any)} options={[{value:"all",label:"all"},{value:"published",label:"published"},{value:"draft",label:"draft"}]} />
+        </div>
         <div className="flex items-center gap-2">
           <input id="import-file" type="file" accept="application/json" className="hidden" onChange={async e=>{
             const file = e.target.files?.[0]; if (!file) return
@@ -54,8 +63,14 @@ export default function GuidesList() {
               <div className="text-sm opacity-60">{g.category || '—'}</div>
               <div className="text-lg font-medium">{g.title}</div>
               <div className="text-xs opacity-60">/{g.slug}</div>
-              <div className="mt-auto flex items-center justify-between">
+              <div className="text-xs opacity-60">Status: {(g as any).status || (g.is_published ? 'published' : 'draft')}</div>
+              <div className="mt-auto flex items-center justify-between gap-2">
                 <UIButton variant="ghost" size="sm" onClick={() => setEditing(g)}>Edit</UIButton>
+                <UIButton size="sm" onClick={async () => {
+                  const next = ((g as any).status === 'published' || g.is_published) ? 'draft' : 'published'
+                  await fetch(`/api/guides/${g.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status: next }) })
+                  await load()
+                }}>{((g as any).status === 'published' || g.is_published) ? 'Unpublish' : 'Publish'}</UIButton>
                 <UIButton variant="destructive" size="sm" onClick={async () => {
                   if (!confirm('Delete guide?')) return
                   await fetch(`/api/guides/${g.id}`, { method: 'DELETE' })

@@ -1,4 +1,5 @@
 from .guide import Guide
+from .job import JobFavorite, JobSearchEvent
 from .checklist import Checklist
 from .template import Template
 from .appointment import Appointment

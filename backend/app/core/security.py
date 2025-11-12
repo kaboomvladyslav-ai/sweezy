@@ -20,12 +20,14 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(subject: str, *, is_admin: bool = False, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(subject: str, *, is_admin: bool = False, role: str | None = None, expires_delta: Optional[timedelta] = None) -> str:
     settings = get_settings()
     if expires_delta is None:
         expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode: Dict[str, Any] = {"sub": subject, "exp": expire, "is_admin": is_admin}
+    if role:
+        to_encode["role"] = role
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 

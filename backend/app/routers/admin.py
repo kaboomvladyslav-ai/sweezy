@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..dependencies import DBSession, CurrentAdmin
 from ..models import User, Guide, Template, Checklist, Appointment
+from ..models.audit_log import AuditLog
 from ..models.news import News
 from ..schemas import GuideCreate, TemplateCreate, ChecklistCreate
 from ..core.config import get_settings
@@ -45,7 +46,7 @@ def stats(_: CurrentAdmin, db: DBSession) -> Dict[str, Any]:
 @router.get("/users")
 def list_users(_: CurrentAdmin, db: DBSession) -> List[Dict[str, Any]]:
     rows = (
-        db.query(User.id, User.email, User.is_superuser, User.created_at)
+        db.query(User.id, User.email, User.is_superuser, User.role, User.created_at)
         .order_by(User.created_at.desc())
         .limit(100)
         .all()
@@ -55,6 +56,7 @@ def list_users(_: CurrentAdmin, db: DBSession) -> List[Dict[str, Any]]:
             "id": r.id,
             "email": r.email,
             "is_superuser": bool(r.is_superuser),
+            "role": r.role,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }
         for r in rows
@@ -153,6 +155,39 @@ def import_guides(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Di
             continue
     db.commit()
     return {"created": created}
+
+
+@router.put("/users/{user_id}/role")
+def update_user_role(user_id: str, payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    role = payload.get("role")
+    if role not in ["admin", "editor", "translator", "viewer"]:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    user.role = role
+    # Keep is_superuser in sync for 'admin'
+    user.is_superuser = bool(role == "admin")
+    db.add(user)
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/audit-logs")
+def list_audit_logs(_: CurrentAdmin, db: DBSession, limit: int = 100) -> List[Dict[str, Any]]:
+    rows = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit).all()
+    return [
+        {
+            "id": r.id,
+            "user_email": r.user_email,
+            "action": r.action,
+            "entity": r.entity,
+            "entity_id": r.entity_id,
+            "changes": r.changes,
+            "created_at": r.created_at.isoformat(),
+        }
+        for r in rows
+    ]
 
 @router.post("/import/news/rss")
 def import_news_rss(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:

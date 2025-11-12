@@ -39,7 +39,7 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)) -> TokenPair:
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    access = create_access_token(subject=user.email, is_admin=user.is_superuser, expires_delta=timedelta(minutes=15))
+    access = create_access_token(subject=user.email, is_admin=user.is_superuser, role=getattr(user, "role", None), expires_delta=timedelta(minutes=15))
     refresh = create_refresh_token(subject=user.email, expires_delta=timedelta(days=7))
 
     return TokenPair(access_token=access, refresh_token=refresh, expires_in=15 * 60)

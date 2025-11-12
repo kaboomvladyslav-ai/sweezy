@@ -13,11 +13,12 @@ class UserService:
         return db.query(User).filter(User.email == email.lower()).one_or_none()
 
     @staticmethod
-    def create(db: Session, *, email: str, password: str, is_superuser: bool = False) -> User:
+    def create(db: Session, *, email: str, password: str, is_superuser: bool = False, role: str = "viewer") -> User:
         user = User(
             email=email.lower(),
             hashed_password=get_password_hash(password),
             is_superuser=is_superuser,
+            role=role,
         )
         db.add(user)
         db.commit()

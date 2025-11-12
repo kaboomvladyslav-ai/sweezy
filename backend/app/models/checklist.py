@@ -18,6 +18,7 @@ class Checklist(Base):
     description: Mapped[Optional[str]] = mapped_column(String(500))
     items: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     is_published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="published", nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(

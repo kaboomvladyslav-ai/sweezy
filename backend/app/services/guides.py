@@ -11,8 +11,17 @@ from ..schemas import GuideCreate, GuideUpdate
 
 class GuideService:
     @staticmethod
-    def list(db: Session, *, offset: int = 0, limit: int = 100) -> List[Guide]:
-        stmt = select(Guide).offset(offset).limit(limit)
+    def list(db: Session, *, offset: int = 0, limit: int = 100, status: str | None = None, include_drafts: bool = False) -> List[Guide]:
+        stmt = select(Guide)
+        if status:
+            stmt = stmt.where(getattr(Guide, "status", None) == status)  # type: ignore[attr-defined]
+        elif not include_drafts:
+            # fallback: filter published via status or is_published
+            if hasattr(Guide, "status"):
+                stmt = stmt.where(Guide.status == "published")  # type: ignore[attr-defined]
+            else:
+                stmt = stmt.where(Guide.is_published == True)  # noqa: E712
+        stmt = stmt.offset(offset).limit(limit)
         return list(db.execute(stmt).scalars().all())
 
     @staticmethod

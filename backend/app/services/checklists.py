@@ -11,8 +11,13 @@ from ..schemas import ChecklistCreate, ChecklistUpdate
 
 class ChecklistService:
     @staticmethod
-    def list(db: Session, *, offset: int = 0, limit: int = 100) -> List[Checklist]:
-        stmt = select(Checklist).offset(offset).limit(limit)
+    def list(db: Session, *, offset: int = 0, limit: int = 100, status: str | None = None, include_drafts: bool = False) -> List[Checklist]:
+        stmt = select(Checklist)
+        if status:
+            stmt = stmt.where(getattr(Checklist, "status", None) == status)  # type: ignore[attr-defined]
+        elif not include_drafts and hasattr(Checklist, "status"):
+            stmt = stmt.where(Checklist.status == "published")  # type: ignore[attr-defined]
+        stmt = stmt.offset(offset).limit(limit)
         return list(db.execute(stmt).scalars().all())
 
     @staticmethod

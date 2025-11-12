@@ -49,3 +49,16 @@ def get_current_user(
 CurrentUser = Annotated[object, Depends(get_current_user)]
 
 
+def require_roles(*roles: str):
+    def dependency(credentials: Annotated[HTTPAuthorizationCredentials, Depends(security_scheme)]):
+        payload = decode_token(credentials.credentials)
+        role = payload.get("role")
+        is_admin = payload.get("is_admin")
+        if is_admin:
+            return payload
+        if role not in roles:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
+        return payload
+    return Depends(dependency)
+
+

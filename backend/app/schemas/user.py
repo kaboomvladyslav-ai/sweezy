@@ -21,6 +21,7 @@ class UserOut(UserBase):
     id: str
     is_active: bool
     is_superuser: bool
+    role: str = "viewer"
     created_at: datetime
     updated_at: datetime
 
