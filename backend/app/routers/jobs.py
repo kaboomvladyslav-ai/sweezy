@@ -19,7 +19,7 @@ async def search(q: str = Query(..., min_length=2), canton: str | None = None, p
 
 
 @router.post("/analytics/events", status_code=status.HTTP_204_NO_CONTENT)
-def log_event(keyword: str, canton: str | None = None, db: DBSession = Depends(get_db)):
+def log_event(keyword: str, canton: str | None = None, db: DBSession):
     try:
         db.add(JobSearchEvent(keyword=keyword.strip().lower(), canton=canton))
         db.commit()
@@ -29,7 +29,7 @@ def log_event(keyword: str, canton: str | None = None, db: DBSession = Depends(g
 
 
 @router.get("/analytics/top", response_model=List[JobSearchEventOut])
-def top_keywords(limit: int = 10, db: DBSession = Depends(get_db)):
+def top_keywords(limit: int = 10, db: DBSession):
     from sqlalchemy import func
     rows = (
         db.query(JobSearchEvent.keyword, JobSearchEvent.canton, func.count().label("count"))
@@ -42,7 +42,7 @@ def top_keywords(limit: int = 10, db: DBSession = Depends(get_db)):
 
 
 @router.get("/favorites", response_model=List[JobFavoriteOut])
-def list_favorites(user: CurrentUser, db: DBSession = Depends(get_db)):
+def list_favorites(user: CurrentUser, db: DBSession):
     rows = (
         db.query(JobFavorite)
         .filter(JobFavorite.user_id == user.id)
@@ -66,7 +66,7 @@ def list_favorites(user: CurrentUser, db: DBSession = Depends(get_db)):
 
 
 @router.post("/favorites", response_model=JobFavoriteOut, status_code=status.HTTP_201_CREATED)
-def add_favorite(payload: JobFavoriteIn, user: CurrentUser, db: DBSession = Depends(get_db)):
+def add_favorite(payload: JobFavoriteIn, user: CurrentUser, db: DBSession):
     fav = JobFavorite(
         user_id=user.id,
         job_id=payload.job_id,
@@ -94,7 +94,7 @@ def add_favorite(payload: JobFavoriteIn, user: CurrentUser, db: DBSession = Depe
 
 
 @router.delete("/favorites/{favorite_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_favorite(favorite_id: str, user: CurrentUser, db: DBSession = Depends(get_db)):
+def remove_favorite(favorite_id: str, user: CurrentUser, db: DBSession):
     fav = db.query(JobFavorite).filter(JobFavorite.id == favorite_id, JobFavorite.user_id == user.id).first()
     if not fav:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Favorite not found")
