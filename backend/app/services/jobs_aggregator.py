@@ -140,38 +140,49 @@ async def search_jobs(q: str | None, canton: str | None, page: int, per_page: in
                         query = f"{base_query} in {city}"
                     else:
                         query = f"{base_query} in Switzerland"
-                    params = {
-                        "query": query,
-                        "page": str(max(page, 1)),
-                        "num_pages": "1",
-                        "country": "ch",
-                        "date_posted": "all",
-                    }
-                    headers = {
-                        "x-rapidapi-key": rapid_key,
-                        "x-rapidapi-host": primary_host,
-                        "Accept": "application/json",
-                    }
-                    url = f"https://{primary_host}/search"
-                    resp = await client.get(url, params=params, headers=headers)
-                    if debug:
-                        try:
-                            snippet = "" if resp.status_code == 200 else resp.text[:220]
-                            debug_info["indeed"].append({"host": primary_host, "url": url, "params": params, "status": resp.status_code, "body": snippet})
-                        except Exception:
-                            pass
-                    if resp.status_code == 200:
+                    # Fetch multiple pages to reach per_page items (JSearch: 10 per page)
+                    page_size = 10
+                    pages_needed = max(1, min(5, (per_page + page_size - 1) // page_size))
+                    total_added = 0
+                    for p in range(page, page + pages_needed):
+                        params = {
+                            "query": query,
+                            "page": str(p),
+                            "num_pages": "1",
+                            "country": "ch",
+                            "date_posted": "all",
+                        }
+                        headers = {
+                            "x-rapidapi-key": rapid_key,
+                            "x-rapidapi-host": primary_host,
+                            "Accept": "application/json",
+                        }
+                        url = f"https://{primary_host}/search"
+                        resp = await client.get(url, params=params, headers=headers)
+                        if debug:
+                            try:
+                                snippet = "" if resp.status_code == 200 else resp.text[:220]
+                                debug_info["indeed"].append({"host": primary_host, "url": url, "params": params, "status": resp.status_code, "body": snippet})
+                            except Exception:
+                                pass
+                        if resp.status_code != 200:
+                            continue
                         data = resp.json()
                         raw = data.get("data") or []
                         parsed = [_parse_jsearch(it, canton) for it in raw]
                         j_items = [p for p in parsed if p]
                         if j_items:
-                            items.extend(j_items)
-                            source_counts["jsearch"] = len(j_items)
-                            # we consider success and skip other hosts
-                            alt_hosts = []
-                        else:
-                            source_counts["jsearch"] = 0
+                            for it in j_items:
+                                items.append(it)
+                                total_added += 1
+                                if total_added >= per_page:
+                                    break
+                            if total_added >= per_page:
+                                break
+                    source_counts["jsearch"] = total_added
+                    if total_added > 0:
+                        # we consider success and skip other hosts
+                        alt_hosts = []
                 except Exception:
                     # swallow and continue to generic hosts
                     pass
