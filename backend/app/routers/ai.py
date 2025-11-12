@@ -128,3 +128,57 @@ def cv_suggest(payload: CVSuggestRequest, db: Session = Depends(get_db)) -> CVSu
         return CVSuggestResponse(text=_fallback_generate(payload))
 
 
+# --- Job application helper ---
+class JobApplyRequest(BaseModel):
+    jobTitle: str
+    company: str | None = None
+    description: str | None = None
+    candidateSummary: str | None = None
+    language: str | None = None  # 'en','de','ru','uk'
+
+
+class JobApplyResponse(BaseModel):
+    text: str
+
+
+def _job_apply_fallback(req: JobApplyRequest) -> str:
+    lang = (req.language or "en").lower()
+    if lang.startswith("de"):
+        return f"Sehr geehrte Damen und Herren,\n\nich bewerbe mich auf die Stelle \"{req.jobTitle}\"{(' bei ' + req.company) if req.company else ''}. Ich bringe relevante Erfahrung mit und arbeite sorgfältig, zuverlässig und kundenorientiert. Gerne überzeuge ich Sie in einem persönlichen Gespräch.\n\nFreundliche Grüsse\n"
+    if lang.startswith("ru"):
+        return f"Здравствуйте,\n\nПодаю заявку на позицию «{req.jobTitle}»{(' в компании ' + req.company) if req.company else ''}. Имею релевантный опыт, работаю аккуратно и ответственно, быстро обучаюсь. Буду рад обсудить детали на собеседовании.\n\nС уважением,\n"
+    if lang.startswith("uk"):
+        return f"Вітаю,\n\nХочу податися на позицію «{req.jobTitle}»{(' у компанії ' + req.company) if req.company else ''}. Маю релевантний досвід, працюю уважно та відповідально, швидко навчаюся. Буду радий обговорити деталі під час інтерв’ю.\n\nЗ повагою,\n"
+    return f"Hello,\n\nI would like to apply for the “{req.jobTitle}” role{(' at ' + req.company) if req.company else ''}. I bring relevant experience, a reliable and detail‑oriented work style, and strong customer focus. I would welcome the opportunity to discuss how I can contribute.\n\nKind regards,\n"
+
+
+@router.post("/job-apply", response_model=JobApplyResponse)
+def job_apply(req: JobApplyRequest) -> JobApplyResponse:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return JobApplyResponse(text=_job_apply_fallback(req))
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        prompt = (
+            "You are an HR assistant in Switzerland. Write a short, professional application message/cover email.\n"
+            f"Language: {req.language or 'en'}\n"
+            f"Job Title: {req.jobTitle}\n"
+            f"Company: {req.company or ''}\n"
+            f"Job Description: {req.description or ''}\n"
+            f"Candidate Summary: {req.candidateSummary or ''}\n"
+            "Rules: 1) 90-140 words; 2) concise, neutral tone; 3) avoid clichés; 4) optionally include 2-3 bullet points; "
+            "5) Swiss style; 6) no placeholders."
+        )
+        chat = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=260,
+        )
+        text = (chat.choices[0].message.content or "").strip()
+        return JobApplyResponse(text=text or _job_apply_fallback(req))
+    except Exception:
+        return JobApplyResponse(text=_job_apply_fallback(req))
+
+
