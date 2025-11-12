@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 from datetime import datetime
 import httpx
 
@@ -68,12 +68,13 @@ def _parse_date(value) -> datetime | None:
     return None
 
 
-async def search_jobs(q: str | None, canton: str | None, page: int, per_page: int) -> Tuple[List[JobItem], Dict[str, int]]:
+async def search_jobs(q: str | None, canton: str | None, page: int, per_page: int, debug: bool = False) -> Tuple[List[JobItem], Dict[str, int], Dict[str, Any]]:
     """
     Fetch jobs from Indeed RapidAPI and optionally RAV Job-Room API, merge and sort by date desc.
     """
     items: List[JobItem] = []
     source_counts: Dict[str, int] = {}
+    debug_info: Dict[str, Any] = {"indeed": [], "rav": []} if debug else {}
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         # Indeed (RapidAPI)
@@ -110,6 +111,11 @@ async def search_jobs(q: str | None, canton: str | None, page: int, per_page: in
             for url, params in variants:
                 try:
                     resp = await client.get(url, params=params, headers=headers)
+                    if debug:
+                        try:
+                            debug_info["indeed"].append({"url": url, "params": params, "status": resp.status_code})
+                        except Exception:
+                            pass
                     if resp.status_code != 200:
                         continue
                     data = resp.json()
@@ -145,6 +151,11 @@ async def search_jobs(q: str | None, canton: str | None, page: int, per_page: in
                 else:
                     rav_url = f"{base}/jobAdvertisements"
                 resp = await client.get(rav_url, params=params, headers=headers)
+                if debug:
+                    try:
+                        debug_info["rav"].append({"url": rav_url, "params": params, "status": resp.status_code})
+                    except Exception:
+                        pass
                 if resp.status_code == 200:
                     data = resp.json()
                     raw_list = data.get("content") if isinstance(data, dict) else data
@@ -160,6 +171,6 @@ async def search_jobs(q: str | None, canton: str | None, page: int, per_page: in
     items.sort(key=lambda x: x.posted_at or datetime.min, reverse=True)
     start = (page - 1) * per_page
     end = start + per_page
-    return items[start:end], source_counts
+    return items[start:end], source_counts, debug_info
 
 

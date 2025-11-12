@@ -13,9 +13,9 @@ router = APIRouter()
 
 
 @router.get("/search", response_model=JobSearchResponse)
-async def search(q: str | None = None, canton: str | None = None, page: int = 1, per_page: int = 20) -> JobSearchResponse:
-    items, sources = await search_jobs(q=q, canton=canton, page=page, per_page=per_page)
-    return JobSearchResponse(items=items, total=len(items), sources=sources)
+async def search(q: str | None = None, canton: str | None = None, page: int = 1, per_page: int = 20, debug: bool = False) -> JobSearchResponse:
+    items, sources, dbg = await search_jobs(q=q, canton=canton, page=page, per_page=per_page, debug=debug)
+    return JobSearchResponse(items=items, total=len(items), sources=sources, debug=dbg if debug else None)
 
 
 @router.post("/analytics/events", status_code=status.HTTP_204_NO_CONTENT)

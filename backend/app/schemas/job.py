@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 
@@ -23,6 +23,7 @@ class JobSearchResponse(BaseModel):
     items: List[JobItem]
     total: int
     sources: Dict[str, int] = {}
+    debug: Optional[Dict[str, Any]] = None
 
 
 class JobFavoriteIn(BaseModel):
