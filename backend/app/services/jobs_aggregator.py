@@ -80,14 +80,11 @@ async def search_jobs(q: str | None, canton: str | None, page: int, per_page: in
         # Indeed (RapidAPI)
         rapid_key = os.getenv("RAPIDAPI_KEY") or os.getenv("RAPID_API_KEY") or os.getenv("INDEED_RAPIDAPI_KEY")
         if rapid_key:
-            host = os.getenv("RAPIDAPI_HOST") or "indeed-api.p.rapidapi.com"
-            headers = {
-                "x-rapidapi-key": rapid_key,
-                "x-rapidapi-host": host,
-                "X-RapidAPI-Key": rapid_key,   # some packages require capitalized headers
-                "X-RapidAPI-Host": host,
-                "Accept": "application/json",
-            }
+            primary_host = os.getenv("RAPIDAPI_HOST") or "indeed-api.p.rapidapi.com"
+            alt_hosts = [primary_host]
+            # Fallback to the stable package if a custom host is set
+            if primary_host != "indeed-api.p.rapidapi.com":
+                alt_hosts.append("indeed-api.p.rapidapi.com")
             # Try a few common endpoint/param variants used by different Indeed RapidAPI packs
             canton_map = {
                 "ZH": "Zurich",
@@ -119,56 +116,63 @@ async def search_jobs(q: str | None, canton: str | None, page: int, per_page: in
             }
             location_text = f"{canton_map.get((canton or '').upper(), (canton or '').upper() or 'Switzerland')}, Switzerland".strip(", ")
             query = (q or "").strip() or "a"  # fallback to broad match to fetch any listings
-            variants = []
-            if query:
-                variants.extend([
-                    (f"https://{host}/jobs/search", {"query": query, "location": location_text, "country": "CH", "page_id": str(max(page, 1))}),
-                    (f"https://{host}/jobs/search", {"q": query, "location": location_text, "country": "CH", "page": str(max(page, 1))}),
-                    (f"https://{host}/search", {"query": query, "location": location_text, "country": "CH", "page": str(max(page, 1))}),
-                    (f"https://{host}/search", {"q": query, "l": location_text, "page": str(max(page, 1))}),
-                    # without explicit country
-                    (f"https://{host}/jobs/search", {"query": query, "location": location_text, "page": str(max(page, 1))}),
-                    (f"https://{host}/search", {"q": query, "l": location_text, "page": str(max(page, 1))}),
-                    # some packages use 'co' for country and 'start' for paging
-                    (f"https://{host}/search", {"q": query, "l": location_text, "co": "ch", "start": str((max(page, 1)-1)*per_page), "limit": str(per_page)}),
-                ])
-            else:
-                # No query: try endpoints without query to get general listings
-                variants.extend([
-                    (f"https://{host}/jobs/search", {"location": location_text, "country": "CH", "page_id": str(max(page, 1))}),
-                    (f"https://{host}/jobs/search", {"location": location_text, "country": "CH", "page": str(max(page, 1))}),
-                    (f"https://{host}/search", {"location": location_text, "country": "CH", "page": str(max(page, 1))}),
-                    (f"https://{host}/search", {"l": location_text, "page": str(max(page, 1))}),
-                    (f"https://{host}/search", {"l": location_text, "co": "ch", "start": str((max(page, 1)-1)*per_page), "limit": str(per_page)}),
-                ])
             success = False
-            for url, params in variants:
-                try:
-                    resp = await client.get(url, params=params, headers=headers)
-                    if debug:
-                        try:
-                            snippet = ""
-                            if resp.status_code != 200:
-                                try:
-                                    snippet = resp.text[:220]
-                                except Exception:
-                                    snippet = ""
-                            debug_info["indeed"].append({"url": url, "params": params, "status": resp.status_code, "body": snippet})
-                        except Exception:
-                            pass
-                    if resp.status_code != 200:
+            for host in alt_hosts:
+                headers = {
+                    "x-rapidapi-key": rapid_key,
+                    "x-rapidapi-host": host,
+                    "X-RapidAPI-Key": rapid_key,
+                    "X-RapidAPI-Host": host,
+                    "Accept": "application/json",
+                }
+                variants = []
+                if query:
+                    variants.extend([
+                        (f"https://{host}/jobs/search", {"query": query, "location": location_text, "country": "CH", "page_id": str(max(page, 1))}),
+                        (f"https://{host}/jobs/search", {"q": query, "location": location_text, "country": "CH", "page": str(max(page, 1))}),
+                        (f"https://{host}/search", {"query": query, "location": location_text, "country": "CH", "page": str(max(page, 1))}),
+                        (f"https://{host}/search", {"q": query, "l": location_text, "page": str(max(page, 1))}),
+                        (f"https://{host}/jobs/search", {"query": query, "location": location_text, "page": str(max(page, 1))}),
+                        (f"https://{host}/search", {"q": query, "l": location_text, "page": str(max(page, 1))}),
+                        (f"https://{host}/search", {"q": query, "l": location_text, "co": "ch", "start": str((max(page, 1)-1)*per_page), "limit": str(per_page)}),
+                    ])
+                else:
+                    variants.extend([
+                        (f"https://{host}/jobs/search", {"location": location_text, "country": "CH", "page_id": str(max(page, 1))}),
+                        (f"https://{host}/jobs/search", {"location": location_text, "country": "CH", "page": str(max(page, 1))}),
+                        (f"https://{host}/search", {"location": location_text, "country": "CH", "page": str(max(page, 1))}),
+                        (f"https://{host}/search", {"l": location_text, "page": str(max(page, 1))}),
+                        (f"https://{host}/search", {"l": location_text, "co": "ch", "start": str((max(page, 1)-1)*per_page), "limit": str(per_page)}),
+                    ])
+                for url, params in variants:
+                    try:
+                        resp = await client.get(url, params=params, headers=headers)
+                        if debug:
+                            try:
+                                snippet = ""
+                                if resp.status_code != 200:
+                                    try:
+                                        snippet = resp.text[:220]
+                                    except Exception:
+                                        snippet = ""
+                                debug_info["indeed"].append({"host": host, "url": url, "params": params, "status": resp.status_code, "body": snippet})
+                            except Exception:
+                                pass
+                        if resp.status_code != 200:
+                            continue
+                        data = resp.json()
+                        raw_list = data.get("data") or data.get("jobs") or data.get("results") or data.get("items") or []
+                        parsed = [_parse_indeed(it, canton) for it in raw_list]
+                        indeed_items = [p for p in parsed if p]
+                        if indeed_items:
+                            items.extend(indeed_items)
+                            source_counts["indeed"] = len(indeed_items)
+                            success = True
+                            break
+                    except Exception:
                         continue
-                    data = resp.json()
-                    raw_list = data.get("data") or data.get("jobs") or data.get("results") or data.get("items") or []
-                    parsed = [_parse_indeed(it, canton) for it in raw_list]
-                    indeed_items = [p for p in parsed if p]
-                    if indeed_items:
-                        items.extend(indeed_items)
-                        source_counts["indeed"] = len(indeed_items)
-                        success = True
-                        break
-                except Exception:
-                    continue
+                if success:
+                    break
             if not success:
                 # mark as attempted so clients don't assume "not configured"
                 source_counts["indeed"] = -1
