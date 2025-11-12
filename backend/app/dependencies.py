@@ -32,7 +32,7 @@ DBSession = Annotated[Session, Depends(get_db)]
 
 def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security_scheme)],
-    db: DBSession = Depends(get_db),
+    db: DBSession,
 ):
     try:
         payload = decode_token(credentials.credentials)
