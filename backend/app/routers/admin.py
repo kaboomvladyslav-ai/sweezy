@@ -19,8 +19,10 @@ from ..core.config import get_settings
 from ..routers.media import UPLOAD_DIR
 from ..models.rss_feed import RSSFeed
 from ..services.rss_importer import RSSImporter
-from ..models.subscription import SubscriptionEvent
+from ..models.subscription import Subscription, SubscriptionEvent
 from ..services import stripe_service
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import func
 import feedparser
 import httpx
 
@@ -246,10 +248,62 @@ def set_user_subscription(user_id: str, payload: Dict[str, Any], db: DBSession, 
     elif status_value == "trial":
         stripe_service.apply_trial(db, user, days=7)
     else:
+        # Manual premium with optional plan and duration
+        plan = payload.get("plan") or "monthly"  # 'monthly' | 'yearly'
+        if plan not in {"monthly", "yearly"}:
+            plan = "monthly"
+        period = timedelta(days=365 if plan == "yearly" else 30)
+        expire_at = datetime.now(timezone.utc) + period
+        # Ensure subscriptions row
+        sub = db.query(Subscription).filter(Subscription.user_id == user.id).one_or_none()
+        if sub is None:
+            sub = Subscription(user_id=user.id, status="active", plan=plan, current_period_end=expire_at)
+        else:
+            sub.status = "active"
+            sub.plan = plan
+            sub.current_period_end = expire_at
         user.subscription_status = "premium"
+        user.subscription_expire_at = expire_at
+        db.add(sub)
         db.add(user)
         db.commit()
     return {"ok": True}
+
+@router.get("/subscriptions/analytics")
+def subscriptions_analytics(_: CurrentAdmin, db: DBSession, months: int = 6) -> Dict[str, Any]:
+    # Totals by plan
+    monthly = db.query(func.count()).select_from(Subscription).filter(Subscription.status == "active", Subscription.plan == "monthly").scalar() or 0
+    yearly = db.query(func.count()).select_from(Subscription).filter(Subscription.status == "active", Subscription.plan == "yearly").scalar() or 0
+    premium_users = db.query(func.count()).select_from(User).filter(User.subscription_status == "premium").scalar() or 0
+    trial_users = db.query(func.count()).select_from(User).filter(User.subscription_status == "trial").scalar() or 0
+    free_users = db.query(func.count()).select_from(User).filter(User.subscription_status == "free").scalar() or 0
+    # Last 6 months time series
+    rows = (
+        db.query(
+            func.date_trunc("month", Subscription.created_at).label("m"),
+            func.sum(func.case((Subscription.plan == "monthly", 1), else_=0)).label("monthly"),
+            func.sum(func.case((Subscription.plan == "yearly", 1), else_=0)).label("yearly"),
+        )
+        .filter(Subscription.status == "active")
+        .group_by(func.date_trunc("month", Subscription.created_at))
+        .order_by(func.date_trunc("month", Subscription.created_at).desc())
+        .limit(max(1, min(24, months)))
+        .all()
+    )
+    series = [
+        {"month": r[0].strftime("%Y-%m"), "monthly": int(r[1] or 0), "yearly": int(r[2] or 0)}
+        for r in reversed(rows)
+    ]
+    return {
+        "totals": {
+            "monthly": int(monthly),
+            "yearly": int(yearly),
+            "premium_users": int(premium_users),
+            "trial_users": int(trial_users),
+            "free_users": int(free_users),
+        },
+        "by_month": series,
+    }
 
 @router.post("/import/news/rss")
 def import_news_rss(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
