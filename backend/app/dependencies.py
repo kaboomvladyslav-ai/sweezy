@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from .core.database import get_db
 from .core.security import decode_token
 from .services.users import UserService
+from datetime import datetime, timezone
 
 
 security_scheme = HTTPBearer(auto_error=True)
@@ -61,4 +62,28 @@ def require_roles(*roles: str):
         return payload
     return Depends(dependency)
 
+
+def require_premium():
+    def dependency(user=Depends(get_current_user)):
+        # Expire trial/premium if past date
+        expire_at = getattr(user, "subscription_expire_at", None)
+        status = getattr(user, "subscription_status", "free") or "free"
+        if status in {"trial", "premium"} and expire_at is not None:
+            try:
+                if expire_at < datetime.now(timezone.utc):
+                    # downgrade
+                    user.subscription_status = "free"
+                    user.subscription_expire_at = None
+                    # We do not have db session here; silently rely on next write to persist, or ignore.
+                    status = "free"
+            except Exception:
+                pass
+        if status not in {"trial", "premium"}:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Premium required. Subscribe to continue.",
+            )
+        return user
+
+    return Depends(dependency)
 

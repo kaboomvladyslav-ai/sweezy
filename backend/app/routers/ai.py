@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import os
 
-from ..dependencies import get_db, CurrentAdmin
+from ..dependencies import get_db, require_premium
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -92,7 +92,7 @@ def _fallback_generate(payload: CVSuggestRequest) -> str:
         return base + tail
 
 
-@router.post("/cv-suggest", response_model=CVSuggestResponse)
+@router.post("/cv-suggest", response_model=CVSuggestResponse, dependencies=[require_premium()])
 def cv_suggest(payload: CVSuggestRequest, db: Session = Depends(get_db)) -> CVSuggestResponse:
     """
     Suggest HR-style text based on CV data.
@@ -152,7 +152,7 @@ def _job_apply_fallback(req: JobApplyRequest) -> str:
     return f"Hello,\n\nI would like to apply for the “{req.jobTitle}” role{(' at ' + req.company) if req.company else ''}. I bring relevant experience, a reliable and detail‑oriented work style, and strong customer focus. I would welcome the opportunity to discuss how I can contribute.\n\nKind regards,\n"
 
 
-@router.post("/job-apply", response_model=JobApplyResponse)
+@router.post("/job-apply", response_model=JobApplyResponse, dependencies=[require_premium()])
 def job_apply(req: JobApplyRequest) -> JobApplyResponse:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:

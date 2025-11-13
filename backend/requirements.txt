@@ -16,4 +16,5 @@ httpx>=0.24,<1.0
 ruff>=0.4,<1.0
 feedparser>=6.0,<7.0
 openai>=1.0,<2.0
+stripe>=5.0,<10.0
 

@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from urllib.parse import urlparse, urljoin
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,8 @@ from ..core.config import get_settings
 from ..routers.media import UPLOAD_DIR
 from ..models.rss_feed import RSSFeed
 from ..services.rss_importer import RSSImporter
+from ..models.subscription import SubscriptionEvent
+from ..services import stripe_service
 import feedparser
 import httpx
 
@@ -188,6 +190,66 @@ def list_audit_logs(_: CurrentAdmin, db: DBSession, limit: int = 100) -> List[Di
         }
         for r in rows
     ]
+ 
+ 
+@router.get("/subscriptions")
+def list_subscriptions(_: CurrentAdmin, db: DBSession, limit: int = 200) -> List[Dict[str, Any]]:
+    rows = (
+        db.query(User.id, User.email, User.subscription_status, User.subscription_expire_at, User.stripe_customer_id, User.stripe_subscription_id)
+        .order_by(User.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "user_id": r[0],
+            "email": r[1],
+            "status": r[2],
+            "expire_at": r[3].isoformat() if r[3] else None,
+            "stripe_customer_id": r[4],
+            "stripe_subscription_id": r[5],
+        }
+        for r in rows
+    ]
+ 
+ 
+@router.get("/subscriptions/events")
+def list_subscription_events(_: CurrentAdmin, db: DBSession, limit: int = 200) -> List[Dict[str, Any]]:
+    rows = (
+        db.query(SubscriptionEvent)
+        .order_by(SubscriptionEvent.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": e.id,
+            "user_id": e.user_id,
+            "type": e.type,
+            "payload": e.payload,
+            "created_at": e.created_at.isoformat() if e.created_at else None,
+        }
+        for e in rows
+    ]
+ 
+ 
+@router.post("/users/{user_id}/subscription")
+def set_user_subscription(user_id: str, payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    status_value = payload.get("status")
+    if status_value not in {"free", "trial", "premium"}:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    if status_value == "free":
+        stripe_service.apply_free(db, user)
+    elif status_value == "trial":
+        stripe_service.apply_trial(db, user, days=7)
+    else:
+        user.subscription_status = "premium"
+        db.add(user)
+        db.commit()
+    return {"ok": True}
 
 @router.post("/import/news/rss")
 def import_news_rss(payload: Dict[str, Any], db: DBSession, _: CurrentAdmin) -> Dict[str, Any]:

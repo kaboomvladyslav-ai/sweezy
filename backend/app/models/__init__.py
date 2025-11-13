@@ -4,6 +4,7 @@ from .checklist import Checklist
 from .template import Template
 from .appointment import Appointment
 from .user import User
+from .subscription import Subscription, SubscriptionEvent
 
 __all__ = [
     "Guide",
@@ -11,6 +12,8 @@ __all__ = [
     "Template",
     "Appointment",
     "User",
+    "Subscription",
+    "SubscriptionEvent",
 ]
 
 

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from ..dependencies import get_db, CurrentUser, DBSession
+from ..dependencies import get_db, CurrentUser, DBSession, require_premium
 from ..schemas.job import JobItem, JobSearchResponse, JobFavoriteIn, JobFavoriteOut, JobSearchEventOut
 from ..services.jobs_aggregator import search_jobs
 from ..models.job import JobFavorite, JobSearchEvent
@@ -41,7 +41,7 @@ def top_keywords(db: DBSession, limit: int = 10):
     return [JobSearchEventOut(keyword=r[0], canton=r[1], count=r[2]) for r in rows]
 
 
-@router.get("/favorites", response_model=List[JobFavoriteOut])
+@router.get("/favorites", response_model=List[JobFavoriteOut], dependencies=[require_premium()])
 def list_favorites(user: CurrentUser, db: DBSession):
     rows = (
         db.query(JobFavorite)
@@ -65,7 +65,7 @@ def list_favorites(user: CurrentUser, db: DBSession):
     ]
 
 
-@router.post("/favorites", response_model=JobFavoriteOut, status_code=status.HTTP_201_CREATED)
+@router.post("/favorites", response_model=JobFavoriteOut, status_code=status.HTTP_201_CREATED, dependencies=[require_premium()])
 def add_favorite(payload: JobFavoriteIn, user: CurrentUser, db: DBSession):
     fav = JobFavorite(
         user_id=user.id,
@@ -93,7 +93,7 @@ def add_favorite(payload: JobFavoriteIn, user: CurrentUser, db: DBSession):
     )
 
 
-@router.delete("/favorites/{favorite_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/favorites/{favorite_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[require_premium()])
 def remove_favorite(favorite_id: str, user: CurrentUser, db: DBSession):
     fav = db.query(JobFavorite).filter(JobFavorite.id == favorite_id, JobFavorite.user_id == user.id).first()
     if not fav:

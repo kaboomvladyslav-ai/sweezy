@@ -19,6 +19,7 @@ class UserService:
             hashed_password=get_password_hash(password),
             is_superuser=is_superuser,
             role=role,
+            subscription_status="free",
         )
         db.add(user)
         db.commit()

@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Users, BookOpenText, FileText, Activity, CheckSquare, Calendar, SlidersHorizontal, Newspaper, Rss, ListChecks, Languages, Briefcase } from 'lucide-react'
+import { LayoutDashboard, Users, BookOpenText, FileText, Activity, CheckSquare, Calendar, SlidersHorizontal, Newspaper, Rss, ListChecks, Languages, Briefcase, CreditCard } from 'lucide-react'
 
 const items = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,6 +12,7 @@ const items = [
   { href: '/admin/checklists', label: 'Checklists', icon: CheckSquare },
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/rss-feeds', label: 'RSS Feeds', icon: Rss },
+  { href: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
   { href: '/admin/audit-logs', label: 'Audit', icon: ListChecks },
   { href: '/admin/translations', label: 'Translations', icon: Languages },
   { href: '/admin/glossary', label: 'Glossary', icon: Languages },

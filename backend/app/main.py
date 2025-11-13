@@ -31,6 +31,7 @@ from .routers.ai import router as ai_router
 from .routers.jobs import router as jobs_router
 from .routers.live import router as live_router
 from .routers.translations import router as translations_router
+from .routers.subscriptions import router as subscriptions_router
 
 
 settings = get_settings()
@@ -172,6 +173,7 @@ app.include_router(ai_router, prefix=f"{API_PREFIX}/ai", tags=["ai"])
 app.include_router(jobs_router, prefix=f"{API_PREFIX}/jobs", tags=["jobs"])
 app.include_router(live_router, prefix=f"{API_PREFIX}/live", tags=["live"])
 app.include_router(translations_router, prefix=f"{API_PREFIX}/translations", tags=["translations"])
+app.include_router(subscriptions_router, prefix=f"{API_PREFIX}/subscriptions", tags=["subscriptions"])
 
 # Serve uploaded media
 try:
